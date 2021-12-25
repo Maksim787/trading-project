@@ -11,7 +11,7 @@ class DataGetter:
         if cache_name in self.cached:
             with open("data/cache/" + cache_name) as f:
                 return list(map(float, f.readline().split()))
-        result = list(yf.download(stock_name, start=start, end=end, interval=interval)['Adj Close'])
+        result = list(yf.download(stock_name, start=start, end=end, interval=interval)["Adj Close"])
         with open("data/cache/" + cache_name, "w") as f:
             print(*result, file=f)
         return result
@@ -19,5 +19,5 @@ class DataGetter:
 
 if __name__ == "__main__":
     getter = DataGetter()
-    r = getter.get_stock('SBER.ME', start='2020-01-01', end='2021-01-01', interval='1d')
+    r = getter.get_stock("SBER.ME", start="2020-01-01", end="2021-01-01", interval="1d")
     print(r)

@@ -37,9 +37,12 @@ class Tester:
     def init_data(self):
         for stock_name in self.strategy.needed_stocks:
             if stock_name not in self.data:
-                self.data[stock_name] = self.data_getter.get_stock(stock_name,
-                                                                   start=self.strategy.start, end=self.strategy.end,
-                                                                   interval=self.strategy.interval)
+                self.data[stock_name] = self.data_getter.get_stock(
+                    stock_name,
+                    start=self.strategy.start,
+                    end=self.strategy.end,
+                    interval=self.strategy.interval,
+                )
                 self.price_history[stock_name] = []
                 self.strategy.capital[stock_name] = 0
                 self.capital_history[stock_name] = []
@@ -62,7 +65,9 @@ class Tester:
         self.strategy.capital[order.stock_name] += sign * order.number
 
     def close_orders(self):
-        while self.strategy.close_order_queue and self.strategy.close_order_queue[0][0] == self.tick:
+        while (
+            self.strategy.close_order_queue and self.strategy.close_order_queue[0][0] == self.tick
+        ):
             (tick, order_id) = heappop(self.strategy.close_order_queue)
             self.strategy.orders[order_id].close()
         for order_id in self.strategy.closed_orders:

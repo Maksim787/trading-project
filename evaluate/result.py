@@ -5,9 +5,12 @@ from strategy.base import BaseStrategy
 
 
 class TestResult:
-    def __init__(self, capital_history: dict[str, list[float]],
-                 price_history: dict[str, list[float]],
-                 strategy: BaseStrategy):
+    def __init__(
+        self,
+        capital_history: dict[str, list[float]],
+        price_history: dict[str, list[float]],
+        strategy: BaseStrategy,
+    ):
         n_ticks = len(capital_history["money"])
         price_history["money"] = [1] * n_ticks
         self.total_capital_list = [0] * n_ticks

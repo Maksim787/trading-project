@@ -1,0 +1,18 @@
+name: Linter CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+      - name: Check codestyle with Black
+        uses: psf/black@stable
+        with:
+          options: "--line-length 100"

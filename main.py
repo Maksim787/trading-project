@@ -4,5 +4,5 @@ from evaluate.result import TestResult
 from strategy.random_strategy import RandomStrategy
 
 tester = Tester(DataGetter(), TestResult)
-result = tester.test(RandomStrategy('SBER.ME'))
+result = tester.test(RandomStrategy("SBER.ME"))
 result.plot_capital()
