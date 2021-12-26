@@ -7,6 +7,13 @@ class DataGetter:
         self.cached = set(os.listdir("data/cache"))
 
     def get_stock(self, stock_name: str, start: str, end: str, interval: str) -> list[float]:
+        """
+        :param stock_name: название инструмента на finance.yahoo.com
+        :param start: начало периода
+        :param end: конец периода
+        :param interval: интервал между наблюдениями: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
+        :return: список цен
+        """
         cache_name = f"{stock_name}.{start}.{end}.{interval}.txt"
         if cache_name in self.cached:
             with open("data/cache/" + cache_name) as f:

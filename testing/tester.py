@@ -7,6 +7,10 @@ from heapq import *
 
 class Tester:
     def __init__(self, data_getter: DataGetter, result_class):
+        """
+        :param data_getter: объект класса, который предоставляет метод get_stock
+        :param result_class: класс, объект которого возвращается после тестирования
+        """
         self.data_getter: DataGetter = data_getter
         self.result_class = result_class
         self.data: dict[str, list[float]] = {}
@@ -18,6 +22,12 @@ class Tester:
         self.result = None
 
     def test(self, strategy: BaseStrategy):
+        """
+        Тестирует стратегию
+
+        :param strategy: стратегия для тестирования
+        :return: объект класса result_class, переданного в конструкторе
+        """
         self.strategy = strategy
         self.strategy.price_history = self.price_history
         self.init_data()
@@ -32,6 +42,11 @@ class Tester:
         return self.result_class(self.capital_history, self.price_history, self.strategy)
 
     def reset(self):
+        """
+        Заново зовет конструктор с теми же параметрами
+
+        :return: None
+        """
         self.__init__(self.data_getter, self.result_class)
 
     def init_data(self):
@@ -66,7 +81,7 @@ class Tester:
 
     def close_orders(self):
         while (
-            self.strategy.close_order_queue and self.strategy.close_order_queue[0][0] == self.tick
+                self.strategy.close_order_queue and self.strategy.close_order_queue[0][0] == self.tick
         ):
             (tick, order_id) = heappop(self.strategy.close_order_queue)
             self.strategy.orders[order_id].close()
