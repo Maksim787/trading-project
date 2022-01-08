@@ -6,19 +6,41 @@ from strategy.base import BaseStrategy
 
 
 class RandomStrategy(BaseStrategy):
-    def __init__(self, stock_name, initial_money=1e6):
-        super().__init__(initial_money)
-        self.stock_name = stock_name
-        self.needed_stocks.append(stock_name)
-        self.start = "2020-01-01"
-        self.end = datetime.date.today().isoformat()
-        self.interval = "1d"
+    def __init__(self, equity: str, cash: float):
+        super().__init__()
+        self.equity: str = equity
+        self.cash: float = cash
+        self.my_orders: list[int] = []
+        random.seed(1)
+
+    def initialize(self):
+        t = self.tester
+        t.add_equity(self.equity)
+        t.set_cash(self.cash)
+        t.set_start(datetime.date(2020, 1, 1))
+        t.set_end(datetime.date.today())
+        t.set_interval("1d")
 
     def make_tick(self):
-        money = self.capital["money"]
-        stock = self.capital[self.stock_name]
-        is_buy = random.randint(0, 1)
-        number = stock // 2
-        if is_buy:
-            number = int(math.floor(money // self.price_history[self.stock_name][-1]))
-        self.create_order(self.stock_name, is_buy, number, 10)
+        t = self.tester
+
+        if random.random() < 0.5:
+            for order_id in self.my_orders:
+                t.close_order(order_id)
+            self.my_orders = []
+
+        capital = t.get_capital()
+        price = t.get_current_prices()[self.equity]
+        cash = capital["cash"]
+        equity_number = capital[self.equity]
+
+        is_buy = random.choice([1, -1])
+        if is_buy == 1:
+            number = int(math.floor(cash / 2 / price))
+        else:
+            number = -equity_number // 2
+        if random.random() < 0.5:
+            t.create_order(number, self.equity, duration=10)
+        else:
+            order_id = t.create_order(number, self.equity)
+            self.my_orders.append(order_id)
