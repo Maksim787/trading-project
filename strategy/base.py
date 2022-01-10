@@ -1,15 +1,10 @@
-from typing import *
-
-import testing.tester as t
+import testing.tester as tester_module
 
 
 class BaseStrategy:
     name = ""
 
-    def __init__(self):
-        self.tester: Union[t.Tester, None] = None
-
-    def initialize(self):
+    def initialize(self, t: tester_module.Tester):
         """
         Задает параметры стратегии
 
@@ -17,7 +12,7 @@ class BaseStrategy:
         """
         raise NotImplementedError
 
-    def make_tick(self):
+    def make_tick(self, t: tester_module.Tester):
         """
         Принимает решение о создании новых ордеров
 

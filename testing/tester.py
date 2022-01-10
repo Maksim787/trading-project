@@ -3,8 +3,6 @@ import datetime
 from typing import Union
 from heapq import *
 
-from strategy.base import BaseStrategy
-
 
 class Order:
     id_cnt = 0
@@ -41,8 +39,6 @@ class Tester:
         self.all_price_history: dict[str, list[float]] = {}  # вся история цен по названию equity
         self.capital_history: dict[str, list[float]] = {}  # история количества equity и cash по названию
         self.total_ticks: int = 0  # количество ticks
-
-        self.strategy: Union[None, BaseStrategy] = None  # стратегия
 
     def get_start(self) -> datetime.date:
         return self.start
@@ -118,23 +114,21 @@ class Tester:
             order_id, order = self.orders_by_id.popitem()
             self.change_capital(order, -1)
 
-    def test(self, strategy: BaseStrategy):
+    def test(self, strategy):
         """
         Тестирует стратегию
 
         :param strategy: стратегия для тестирования
         :return:
         """
-        self.strategy = strategy
-        strategy.tester = self
-        strategy.initialize()  # получаем настройки стратегии
+        strategy.initialize(self)  # получаем настройки стратегии
 
         self.initialize_data()  # загружаем данные
         for tick in range(self.total_ticks):
             self.add_price_history(tick)  # добавляем цены в историю
             self.record_capital()  # записываем капитал
             self.close_duration_orders()  # закрываем ордера с duration
-            self.strategy.make_tick()  # стратегия делает ход
+            strategy.make_tick(self)  # стратегия делает ход
         self.result_object.initialize(self.capital_history, self.all_price_history, self)
         return self.result_object
 
