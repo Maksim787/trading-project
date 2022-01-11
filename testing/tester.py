@@ -83,6 +83,12 @@ class Tester:
     def set_cash(self, cash: Union[int, float]):
         self.current_capital["cash"] = float(cash)
 
+    def buy_equity(self, number: int, equity: str):
+        self.change_capital(number, equity)
+
+    def sell_equity(self, number: int, equity: str):
+        self.change_capital(-number, equity)
+
     def create_order(self, number: int, equity: str, duration=None) -> int:
         """
         Создает новый Order
@@ -94,7 +100,7 @@ class Tester:
         """
         order = Order(number, equity, duration)
         self.orders_by_id[order.id] = order
-        self.change_capital(order, +1)
+        self.change_capital(order.number, order.equity)
         if duration is not None:
             heappush(self.close_order_queue, (self.get_current_tick() + duration, order.id))
         return order.id
@@ -107,12 +113,12 @@ class Tester:
         :return:
         """
         order = self.orders_by_id.pop(order_id)
-        self.change_capital(order, -1)
+        self.change_capital(-order.number, order.equity)
 
     def close_all_orders(self):
         while self.orders_by_id:
             order_id, order = self.orders_by_id.popitem()
-            self.change_capital(order, -1)
+            self.change_capital(-order.number, order.equity)
 
     def test(self, strategy):
         """
@@ -172,10 +178,12 @@ class Tester:
             if order_id in self.orders_by_id:
                 self.close_order(order_id)
 
-    def change_capital(self, order: Order, is_open: int):
-        #           +1, если открыт
-        # is_open =
-        #           -1, если закрыт
-        cash = order.number * self.current_price_history[order.equity][-1]
-        self.current_capital["cash"] -= is_open * cash
-        self.current_capital[order.equity] += is_open * order.number
+    def change_capital(self, number: int, equity: str):
+        """
+        :param number: +x, если покупка x; -x, если продажа x
+        :param equity:
+        :return:
+        """
+        cash = number * self.current_price_history[equity][-1]
+        self.current_capital["cash"] -= cash
+        self.current_capital[equity] += number
