@@ -52,17 +52,26 @@ class Tester:
     def get_total_ticks(self) -> int:
         return self.total_ticks
 
-    def get_capital(self) -> dict[str, float]:
-        return self.current_capital
-
     def get_capital_history(self) -> dict[str, list[float]]:
         return self.capital_history
 
-    def get_current_prices(self):
+    def get_capital(self) -> dict[str, float]:
+        return self.current_capital
+
+    def get_cash(self) -> float:
+        return self.current_capital["cash"]
+
+    def get_price_history(self) -> dict[str, list[float]]:
+        return self.current_price_history
+
+    def get_price_history_equity(self, equity: str) -> list[float]:
+        return self.current_price_history[equity]
+
+    def get_current_prices(self) -> dict[str, float]:
         return {equity: price_list[-1] for equity, price_list in self.current_price_history.items()}
 
-    def get_price_history(self):
-        return self.current_price_history
+    def get_current_price_equity(self, equity: str) -> float:
+        return self.current_price_history[equity][-1]
 
     def set_start(self, start: datetime.date):
         self.start = start
