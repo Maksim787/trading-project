@@ -36,7 +36,12 @@ class RandomStrategy(BaseStrategy):
         else:
             number = int(math.ceil(-equity_number / 2))
         if random.random() < 0.5:
-            t.create_order(number, self.equity, duration=10)
+            t.create_order(number // 2, self.equity, duration=10)
+            take_profit = price * (1 + random.random() * 0.01)
+            stop_loss = price * (1 - random.random() * 0.01)
+            if number < 0:
+                take_profit, stop_loss = stop_loss, take_profit
+            t.create_order(number // 2, self.equity, take_profit=take_profit, stop_loss=stop_loss)
         else:
             order_id = t.create_order(number, self.equity)
             self.my_orders.append(order_id)

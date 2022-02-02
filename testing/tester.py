@@ -7,15 +7,14 @@ from heapq import *
 class Order:
     id_cnt = 0
 
-    def __init__(self, number: int, equity: str, duration: Union[int, None]):
-        """
-
-        :param number: количество для покупки (отрицательное для продажи)
-        :param equity: название актива
-        :param duration: количество периодов, через которое позиция будет автоматически закрыта
-        """
+    def __init__(self, number: int, equity: str,
+                 take_profit: Union[float, None],
+                 stop_loss: Union[float, None],
+                 duration: Union[int, None]):
         self.number = number
         self.equity = equity
+        self.take_profit = take_profit
+        self.stop_loss = stop_loss
         self.duration = duration
         self.id = Order.id_cnt
         Order.id_cnt += 1
@@ -36,7 +35,9 @@ class Tester:
         self.interval = "1d"  # интервал между наблюдениями
 
         self.orders_by_id: dict[int, Order] = {}  # ордера по id
-        self.close_order_queue = []  # ордера с определенной датой погашения
+        self.duration_order_queue: list[tuple[int, int]] = []  # heap (close_tick, order_id)
+        self.take_profit_order_queue: dict[str, list[tuple[float, int]]] = {}  # min heap by price: (price, order_id)
+        self.stop_loss_order_queue: dict[str, list[tuple[float, int]]] = {}  # max heap by price: (-price, order_id)
 
         self.current_price_history: dict[str, list[float]] = {}  # текущая история цен по названию equity
         self.current_capital: dict[str, float] = {"cash": 0.0}  # текущие количества equity и cash
@@ -186,20 +187,37 @@ class Tester:
         """
         self._change_capital(-number, equity)
 
-    def create_order(self, number: int, equity: str, duration=None) -> int:
+    def create_order(self, number: int, equity: str,
+                     take_profit: Union[float, None] = None, stop_loss: Union[float, None] = None,
+                     duration: Union[int, None] = None) -> int:
         """
         создает новый Order - позицию, за которой можно следить
 
         :param number: количество актива (положительное - покупка, отрицательное - продажа)
         :param equity: название актива
-        :param duration: продолжительность позиции, если указана
+        :param take_profit: цена, при достижении которой нужно зафиксировать прибыль
+        :param stop_loss: цена, при достижении которой нужно зафиксировать убыток
+        :param duration: количество периодов, через которое позиция будет автоматически закрыта
         :return: order_id - уникальный идентификатор позиции
         """
-        order = Order(number, equity, duration)
+        order = Order(number, equity, take_profit, stop_loss, duration)
         self.orders_by_id[order.id] = order
         self._change_capital(order.number, order.equity)
+        if number < 0:
+            # если происходит продажа, то нижняя граница становится take_profit, а верхняя stop_loss
+            take_profit, stop_loss = stop_loss, take_profit
+        price = self.get_price(equity)
+        if take_profit is not None:
+            assert price < take_profit, f"Strange order: {order.number = }, {order.take_profit = }, {price = }"
+        if stop_loss is not None:
+            assert price > stop_loss, f"Strange order: {order.number = }, {order.stop_loss = }, {price = }"
+
         if duration is not None:
-            heappush(self.close_order_queue, (self.get_tick() + duration, order.id))
+            heappush(self.duration_order_queue, (self.get_tick() + duration, order.id))
+        if take_profit is not None:
+            heappush(self.take_profit_order_queue.setdefault(equity, []), (take_profit, order.id))
+        if stop_loss is not None:
+            heappush(self.stop_loss_order_queue.setdefault(equity, []), (-stop_loss, order.id))
         return order.id
 
     def close_order(self, order_id: int):
@@ -233,7 +251,7 @@ class Tester:
         for tick in range(self.total_ticks):
             self._add_price_history(tick)  # добавляем цены в историю
             self._record_capital()  # записываем капитал
-            self._close_duration_orders()  # закрываем ордера с duration
+            self._close_orders()  # закрываем ордера с duration, take_profit, stop_loss
             strategy.make_tick(self)  # стратегия делает ход
         for result_object in self.result_objects:
             result_object.initialize(self)
@@ -266,12 +284,27 @@ class Tester:
         for equity, number in self.current_capital.items():
             self.capital_history[equity].append(number)
 
-    def _close_duration_orders(self):
+    def _close_orders(self):
+        # close duration orders
         current_tick = self.get_tick()
-        while self.close_order_queue and self.close_order_queue[0][0] == current_tick:
-            tick, order_id = heappop(self.close_order_queue)
+        while self.duration_order_queue and self.duration_order_queue[0][0] == current_tick:
+            order_id = heappop(self.duration_order_queue)[1]
             if order_id in self.orders_by_id:
                 self.close_order(order_id)
+        # close take_profit orders
+        for equity, queue in self.take_profit_order_queue.items():
+            price = self.get_price(equity)
+            while queue and queue[0][0] <= price:
+                order_id = heappop(queue)[1]
+                if order_id in self.orders_by_id:
+                    self.close_order(order_id)
+        # close stop_loss orders
+        for equity, queue in self.stop_loss_order_queue.items():
+            price = self.get_price(equity)
+            while queue and -queue[0][0] >= price:
+                order_id = heappop(queue)[1]
+                if order_id in self.orders_by_id:
+                    self.close_order(order_id)
 
     def _change_capital(self, number: int, equity: str):
         """
