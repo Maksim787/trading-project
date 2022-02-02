@@ -223,19 +223,17 @@ class Tester:
         self.orders_by_id[order.id] = order
         if limit_price is None:
             self._handle_order(order)
+            self._change_capital(order.number, order.equity)
         else:
             self._handle_limit_order(order)
         return order.id
 
     def _handle_order(self, order):
         # обработка order.take_profit, order.stop_loss, order.duration
-        # если order.limit_price is None or order.limit_hit, то изменяем капитал
         if order.take_profit is not None or order.stop_loss is not None:
             self._handle_take_profit_and_stop_loss_order(order)
-        if order.duration is not None and (order.limit_price is None or order.limit_hit):
+        if order.duration is not None:
             self._handle_duration_order(order)
-        if order.limit_price is None:
-            self._change_capital(order.number, order.equity)
 
     def _handle_take_profit_and_stop_loss_order(self, order):
         # обработка order.take_profit и order.stop_loss
@@ -296,7 +294,7 @@ class Tester:
         :return:
         """
         order = self.orders_by_id.pop(order_id)
-        if order.limit_price is not None or order.limit_hit:
+        if order.limit_price is None or order.limit_hit:
             self._change_capital(-order.number, order.equity)
 
     def close_all_orders(self):
@@ -362,23 +360,24 @@ class Tester:
             if order_id in self.orders_by_id:
                 self.close_order(order_id)
         # close take_profit orders
-        self._close_order_queue(self.take_profit_order_queue, lambda queue_price, price: queue_price <= price)
+        self._close_order_queue(self.take_profit_order_queue, lambda queue_price, price: queue_price <= price, True)
         # close stop_loss orders
-        self._close_order_queue(self.stop_loss_order_queue, lambda queue_price, price: -queue_price <= price)
+        self._close_order_queue(self.stop_loss_order_queue, lambda queue_price, price: -queue_price >= price, False)
         # hit limit orders
-        self._close_limit_order_queue(self.limit_buy_order_queue, lambda queue_price, price: -queue_price >= price)
-        self._close_limit_order_queue(self.limit_sell_order_queue, lambda queue_price, price: queue_price <= price)
+        self._hit_limit_order_queue(self.limit_buy_order_queue, lambda queue_price, price: -queue_price >= price)
+        self._hit_limit_order_queue(self.limit_sell_order_queue, lambda queue_price, price: queue_price <= price)
 
-    def _close_order_queue(self, order_queue, condition):
+    def _close_order_queue(self, order_queue, condition, is_take_profit):
         # condition(queue_price, price) = True => close order
         for equity, queue in order_queue.items():
             price = self.get_price(equity)
             while queue and condition(queue[0][0], price):
                 order_id = heappop(queue)[1]
                 if order_id in self.orders_by_id:
-                    self.close_order(order_id)
+                    order = self.orders_by_id.pop(order_id)
+                    self._change_capital(-order.number, order.equity, order.take_profit if is_take_profit else order.stop_loss)
 
-    def _close_limit_order_queue(self, limit_order_queue, condition):
+    def _hit_limit_order_queue(self, limit_order_queue, condition):
         # condition(queue_price, price) = True => hit order
         for equity, queue in limit_order_queue.items():
             price = self.get_price(equity)
