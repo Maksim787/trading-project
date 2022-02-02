@@ -8,6 +8,7 @@ from strategy.bollinger_bands import BollingerBands
 
 strategy = RandomStrategy
 equity = "TCSG.ME"
+data_getter = DataGetter()
 
 dates = []
 for i in range(7):
@@ -18,6 +19,6 @@ dates.reverse()
 print(dates)
 for date in dates:
     result = CapitalResult()
-    tester = Tester(DataGetter(), [result])
+    tester = Tester(data_getter, [result])
     tester.test(strategy(equity, 1e7, date))
     result.plot_capital()

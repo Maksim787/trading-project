@@ -60,7 +60,7 @@ II. ```make_tick(self, t: Tester)``` — покупает и продает ак
 1. ```get_order(order_id: int) -> Order```
 1. ```buy_equity(number: int, equity: str)```
 1. ```sell_equity(number: int, equity: str)```
-1. ```create_order(number: int, equity: str, duration=None) -> int```
+1. ```create_order(number: int, equity: str, limit_price=None, take_profit=None, stop_loss=None, duration=None) -> int```
 1. ```close_order(order_id: int)```
 1. ```close_all_orders()```
 
