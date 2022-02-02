@@ -11,10 +11,11 @@ equity = "TCSG.ME"
 
 dates = []
 for i in range(7):
-    date = datetime.date.today() - datetime.timedelta(days=i)
+    date = datetime.date.today() - datetime.timedelta(days=i + 1)
     if date.weekday() <= 4:
         dates.append(date)
 dates.reverse()
+print(dates)
 for date in dates:
     tester = Tester(DataGetter(), TestResult())
     result = tester.test(strategy(equity, 1e7, date))

@@ -20,8 +20,8 @@ class BollingerBands(BaseStrategy):
         t.set_interval("1m")
 
     def make_tick(self, t):
-        price = t.get_current_price_equity(self.equity)
-        prices = t.get_price_history_equity(self.equity)[-self.n :]
+        price = t.get_price(self.equity)
+        prices = t.get_equity_price_history(self.equity)[-self.n :]
         if len(prices) < self.n:
             return
 

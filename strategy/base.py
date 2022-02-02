@@ -6,7 +6,7 @@ class BaseStrategy:
 
     def initialize(self, t: tester_module.Tester):
         """
-        Задает параметры стратегии
+        задает параметры стратегии: даты начала и конца, интервал, используемый список активов, начальное количество денег
 
         :return:
         """
@@ -14,12 +14,8 @@ class BaseStrategy:
 
     def make_tick(self, t: tester_module.Tester):
         """
-        Принимает решение о создании новых ордеров
+        делает покупки и продажи активов, создает позиции
 
         :return:
         """
         raise NotImplementedError
-
-
-if __name__ == "__main__":
-    s = BaseStrategy()
