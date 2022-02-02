@@ -1,21 +1,22 @@
 import matplotlib.pyplot as plt
 
-import testing.tester as tester_module
+from result.base import BaseResult
 
 
-class TestResult:
+class CapitalResult(BaseResult):
     def __init__(self, plot_equity_number=False):
         self.plot_equity_number = plot_equity_number
-        self.total_capital_list = None
-        self.capital_history = None
-        self.total_ticks = None
+        self.total_ticks = 0
+        self.capital_history = {}
+        self.total_capital_list = []
 
-    def initialize(self, capital_history: dict[str, list[float]], price_history: dict[str, list[float]], tester: tester_module.Tester):
-        self.total_ticks = tester.get_total_ticks()
-        self.capital_history = capital_history.copy()
+    def initialize(self, t):
+        self.total_ticks = t.get_total_ticks()
+        self.capital_history = t.get_capital_history().copy()
+        price_history = t.get_price_history()
         price_history["cash"] = [1] * self.total_ticks
         self.total_capital_list = [0] * self.total_ticks
-        for equity, equity_numbers in capital_history.items():
+        for equity, equity_numbers in self.capital_history.items():
             equity_prices = price_history[equity]
             for tick, number in enumerate(equity_numbers):
                 self.total_capital_list[tick] += number * equity_prices[tick]

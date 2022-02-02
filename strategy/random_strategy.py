@@ -6,7 +6,7 @@ from strategy.base import BaseStrategy
 
 
 class RandomStrategy(BaseStrategy):
-    def __init__(self, equity: str, cash: float, date: datetime.date):
+    def __init__(self, equity: str, cash: float, date: datetime.date = datetime.date.today()):
         self.equity: str = equity
         self.cash: float = cash
         self.date = date

@@ -22,13 +22,13 @@ class Order:
 
 
 class Tester:
-    def __init__(self, data_getter, result_object):
+    def __init__(self, data_getter, result_objects):
         """
         :param data_getter: объект, который предоставляет метод get_equity
-        :param result_object: объект, который предоставляет метод initialize
+        :param result_objects: объекты класса, наследуемого от BaseResult
         """
         self.data_getter = data_getter
-        self.result_object = result_object
+        self.result_objects = result_objects
 
         self.required_equities = []  # используемые equities
         self.start: datetime.date = datetime.date(2020, 1, 1)  # начало
@@ -235,8 +235,9 @@ class Tester:
             self._record_capital()  # записываем капитал
             self._close_duration_orders()  # закрываем ордера с duration
             strategy.make_tick(self)  # стратегия делает ход
-        self.result_object.initialize(self.capital_history, self.all_price_history, self)
-        return self.result_object
+        for result_object in self.result_objects:
+            result_object.initialize(self)
+        return self.result_objects
 
     def _initialize_data(self):
         total_ticks = None

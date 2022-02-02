@@ -5,27 +5,34 @@
 ```python
 from data.getter import DataGetter
 from testing.tester import Tester
-from evaluate.result import TestResult
+from result.capital import CapitalResult
 from strategy.random_strategy import RandomStrategy
 
-tester = Tester(DataGetter(), TestResult())
-result = tester.test(RandomStrategy("SBER.ME", 1e7))
+result = CapitalResult()
+strategy = RandomStrategy("SBER.ME", 1e7)
+data_getter = DataGetter()
+tester = Tester(data_getter, [result])
+tester.test(strategy)
 result.plot_capital()
 ```
 
 ```Tester``` принимает в конструкторе:
 1. ```data_getter``` - объект класса, который получает данные
-2. ```result_object``` - объект класса, который будет обрабатывать результаты стратегии
+2. ```result_objects``` - объекты класса, наследуемого от BaseResult,
+   которые будут обрабатывать результаты стратегии
 
-```data_getter``` имеет метод ```get_equity(self, equity, start, end, interval)```, получающий данные по нужному активу за определенный период с нужной частотой
+```data_getter``` имеет метод ```get_equity(self, equity, start, end, interval)```,
+получающий данные по нужному активу за определенный период с нужной частотой
 
-```result_object``` имеет метод ```initialize(self, capital_history, price_history, tester)```, который обрабатывает результаты стратегии
+Каждый из ```result_objects``` имеет метод ```initialize(self, t: Tester)```,
+который вызывается после тестирования стратегии. В нем можно получить нужные данные о результатах.
 
-```Tester``` имеет метод ```test(self, strategy)```, тестирующий стратегию и возвращающий проинициализированный ```result_class```
+```Tester``` имеет метод ```test(self, strategy: BaseStrategy)```,
+он тестирует стратегию и возвращает проинициализированные ```result_objects```
 
 ## Написание стратегий
 
-Стратегия наследуется от базового класса ```BaseStrategy``` и зовет его конструктор
+Стратегия наследуется от базового класса ```BaseStrategy```.
 
 Взаимодействие с тестирующей системой осуществляется через параметр ```t: Tester```. 
 
@@ -61,4 +68,4 @@ II. ```make_tick(self, t: Tester)``` — покупает и продает ак
 покупать и продавать активы, создавать позиции.
 Позиция — объект класса ```Order```, которая содержит название актива,
 количество покупаемого актива (отрицательное для продажи),
-уникальный id позиции и количество периодов, через которое она будет закрыта. 
+уникальный id позиции и количество периодов, через которое она будет закрыта.
