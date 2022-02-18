@@ -22,11 +22,10 @@ def flush_date(date, date_deals, info):
             total_volume += v
             price = p
             i += 1
-        if price != -1:
-            info.append((date, time, price, total_volume))
-            last_price = price
-        else:
-            info.append((date, time, last_price, 0))
+        if price == -1:
+            price = last_price
+        info.append((date, time, price, total_volume))
+        last_price = price
 
 
 # minute interval:
