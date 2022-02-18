@@ -7,6 +7,8 @@ finish_time = 184000
 delta = 100
 time_range = list(range(start_time + delta, finish_time + 1, delta))
 
+os.chdir("../data")
+
 
 def flush_date(date, date_deals, info):
     # date_deals is not empty
@@ -43,8 +45,8 @@ def get_close(data):
     return info
 
 
-os.chdir("data")
 files = os.listdir("relevant_tickers")
+# make data/clean_tickers directory
 if "clean_tickers" not in os.listdir():
     os.mkdir("clean_tickers")
 

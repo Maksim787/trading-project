@@ -3,45 +3,46 @@ import zipfile
 import time
 import pandas as pd
 
-os.chdir("data")
+os.chdir("../data")
 
-all_files = sorted(os.listdir())
+all_files = os.listdir()
 
+# make data/tickers directory
 if "tickers" not in all_files:
     os.mkdir("tickers")
+assert "zip" in all_files, "data/zip folder not found"
 
 zip_files = ["zip/" + x for x in os.listdir("zip")]
-headers = ["DATE", "TIME", "PRICE", "VOLUME"]
-tickers = {}  # tickers[ticker_str] = [(date, time, price, volume)]
+columns = ["DATE", "TIME", "PRICE", "VOLUME"]
+tickers = {}  # tickers[name] = [(date, time, price, volume)]
 dates = []
 
 
 def open_file(zip_ref, tickers, dates):
     names = zip_ref.namelist()
     assert len(names) == 2
-    trade_log = next(filter(lambda x: x.startswith("TradeLog"), names))
-    order_log = next(filter(lambda x: x.startswith("OrderLog"), names))
+    trade_log = next(filter(lambda x: x.startswith("TradeLog"), names))  # trades
+    order_log = next(filter(lambda x: x.startswith("OrderLog"), names))  # orders
     date = zip_file.removeprefix("zip/OrderLog").removesuffix(".zip")
     dates.append(date)
     # open
-    df = pd.read_csv(zip_ref.open(trade_log), usecols=headers)
-    df = df[["SECCODE", "TIME", "PRICE", "VOLUME"]]
+    df = pd.read_csv(zip_ref.open(trade_log), usecols=["SECCODE", "TIME", "PRICE", "VOLUME"])
     # assert (df["TIME"].values != df["TIME"].sort_values().values).sum() == 0
     for ticker, group in df.groupby("SECCODE"):
-        group = group.drop(columns=["SECCODE"])
         if ticker not in tickers:
             create_ticker(ticker)
             tickers[ticker] = []
-        new_data = [
-            (date, int(time), float(price), int(volume)) for time, price, volume in zip(group["TIME"].values, group["PRICE"], group["VOLUME"])
-        ]
-        tickers[ticker].extend(new_data)
+        tickers[ticker].extend(
+            [(date, time, price, volume) for time, price, volume in zip(group["TIME"].tolist(), group["PRICE"].tolist(), group["VOLUME"].tolist())]
+        )
     del df
 
 
 def create_ticker(ticker):
+    # create tickers/ticker.csv
+    # write columns
     with open(f"tickers/{ticker}.csv", "w") as f:
-        f.write(",".join(headers))
+        f.write(",".join(columns))
         f.write("\n")
 
 
@@ -70,5 +71,6 @@ for i, zip_file in enumerate(zip_files, 1):
     except zipfile.BadZipFile:
         print(f"[ERROR] Не удалось считать {zip_file}")
 
+# write dates
 with open("dates.txt", "w") as f:
     print(*dates, sep="\n", file=f)
