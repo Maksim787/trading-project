@@ -24,7 +24,7 @@ def open_file(zip_ref, tickers, dates):
     date = zip_file.removeprefix("zip/OrderLog").removesuffix(".zip")
     dates.append(date)
     # open
-    df = pd.read_csv(zip_ref.open(trade_log))
+    df = pd.read_csv(zip_ref.open(trade_log), usecols=headers)
     df = df[["SECCODE", "TIME", "PRICE", "VOLUME"]]
     # assert (df["TIME"].values != df["TIME"].sort_values().values).sum() == 0
     for ticker, group in df.groupby("SECCODE"):
