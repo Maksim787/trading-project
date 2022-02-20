@@ -10,18 +10,34 @@ from matplotlib.ticker import FuncFormatter
 # read ticker.csv
 # return (prices_by_day, time)
 # prices_by_day[date] = day_price_list
-# time = list of time
+# time = list of time in seconds
 def read_ticker(ticker):
     df = pd.read_csv(f"../data/clean_tickers/{ticker}.csv")
     groups = df.groupby("DATE")
     prices_by_day = groups["PRICE"].apply(list).to_dict()
     time = list(groups["TIME"].get_group(next(iter(groups.groups.keys()))))
-    return prices_by_day, time
+    assert list(map(int, time)) == sorted(map(int, time))
+    return prices_by_day, convert_to_seconds(time)
+
+
+def to_seconds(t):
+    t = str(t)
+    h = int(t[0:2])
+    m = int(t[2:4])
+    s = int(t[4:6])
+    assert m <= 59 and s <= 59, f"{m = }, {s = }"
+    return h * 60 * 60 + m * 60 + s
+
+
+def convert_to_seconds(time):
+    return [to_seconds(t) for t in time]
 
 
 def format_time(t):
-    t = str(t)
-    return f"{t[0:2]}:{t[2:4]}"
+    t = int(t)
+    h = t // 60 ** 2
+    m = t // 60 % 60
+    return f"{h}:{m:02d}"
 
 
 def format_day(d):
@@ -29,25 +45,19 @@ def format_day(d):
     return f"{d[6:8]}.{d[4:6]}.{d[0:4]}"
 
 
-# plot day prices
-# x: time; y: day_prices
-def plot_day_prices(day_prices, time, day=0):
-    fig, ax = plt.subplots()
-    ax.set_title(format_day(day) if day else "")
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x_val, tick_pos: str(x_val)[0:2] + ":" + str(x_val)[2:4]))
-    ax.plot(time, day_prices)
-    plt.show()
-
-
-def plot_random_day_prices(prices_by_day, time):
-    day = random.choice(list(prices_by_day.keys()))
-    plot_day_prices(prices_by_day[day], time, day)
-
-
 def plot_with_time():
     fig, ax = plt.subplots()
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x_val, tick_pos: str(x_val)[0:2] + ":" + str(x_val)[2:4]))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x_val, tick_pos: format_time(x_val)))
     return fig, ax
+
+
+# plot day prices
+# x: time; y: day_prices
+def plot_day_prices(prices_by_day, day, time, ticker=""):
+    fig, ax = plot_with_time()
+    ax.set_title(ticker + " " + format_day(day))
+    ax.plot(time, prices_by_day[day])
+    plt.show()
 
 
 def log_returns(prices_by_day):
@@ -68,16 +78,7 @@ def returns_window(returns, n_pred):
     return result
 
 
-def scale_time(t):
-    t = str(t)
-    h = int(t[0:2])
-    m = int(t[2:4])
-    s = int(t[4:6])
-    return h * 60 ** 2 + m * 60 + s
-
-
 def add_time(dataset_by_day, time):
-    time = [scale_time(t) for t in time]
     for day_data in dataset_by_day:
         assert len(time) == len(day_data[0]), f"{len(time) = }, {len(day_data[0]) = }"
         for i, predictor_list in enumerate(day_data[0]):

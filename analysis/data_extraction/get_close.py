@@ -1,11 +1,25 @@
 import os
 import pandas as pd
 
+
+def time_range_generator(start, finish, d_s):
+    h, m, s = start
+    while (h, m, s) <= finish:
+        yield h * 10000 + m * 100 + s
+        s += d_s
+        if s >= 60:
+            m += s // 60
+            s %= 60
+            if m >= 60:
+                h += m // 60
+                m = m % 60
+
+
 # time: hh:mm:ss
-start_time = 100000
-finish_time = 184000
-delta = 100
-time_range = list(range(start_time + delta, finish_time + 1, delta))
+delta_s = 60
+start_time = (10, delta_s // 100, 0)
+finish_time = (18, 40, 0)
+time_range = list(time_range_generator(start_time, finish_time, delta_s))
 
 os.chdir("../data")
 
