@@ -95,3 +95,12 @@ def plot_day_prices(prices_by_day, day, time, ticker=""):
     plt.title(ticker + " " + format_day(day))
     plt.plot(prices_by_day[day])
     plt.show()
+
+
+def plot_close_price(prices_by_day, ticker=""):
+    close_list = [price_list[-1] for price_list in prices_by_day.values()]
+    days = list(prices_by_day.keys())
+    plot_with_days(days)
+    plt.title(f"{ticker} {format_day(days[0])}-{format_day(days[-1])}")
+    plt.plot(close_list)
+    plt.show()

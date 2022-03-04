@@ -1,5 +1,7 @@
+import matplotlib.pyplot as plt
+import numpy as np
 from enum import Enum
-from itertools import permutations
+from itertools import product
 
 
 class Direction(Enum):
@@ -31,7 +33,7 @@ def get_changes(price_list):
 
 def empty_chain(k):
     chain = {}
-    for p in permutations(tuple(Direction), r=k):
+    for p in product(tuple(Direction), repeat=k):
         chain[p] = {}
         for next_change in tuple(Direction):
             chain[p][next_change] = 0
@@ -80,3 +82,24 @@ def print_chain(chain):
         print(f"{list(prev_changes)}:")
         for next_change, count in next_changes.items():
             print(f"\t{next_change}: {count}")
+
+
+def plot_chain(chain, show_stay=True):
+    up = np.array([next_changes[Direction.Up] for prev_changes, next_changes in chain.items()])
+    down = np.array([next_changes[Direction.Down] for prev_changes, next_changes in chain.items()])
+    if show_stay:
+        stay = np.array([next_changes[Direction.Stay] for prev_changes, next_changes in chain.items()])
+    else:
+        stay = np.zeros(len(up))
+        s = up + down
+        up /= s
+        down /= s
+    labels = [str(prev_changes) for prev_changes in chain]
+    plt.xlabel("probability")
+    plt.barh(labels, down, color="red", label="down")
+    if show_stay:
+        plt.barh(labels, stay, color="blue", label="stay", left=down)
+    plt.barh(labels, up, color="green", label="up", left=down + stay)
+    plt.axvline(x=0.5, color="black")
+    plt.legend()
+    plt.show()
