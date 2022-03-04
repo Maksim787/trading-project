@@ -15,7 +15,7 @@ def returns_window(returns, n_pred):
     for day_returns in returns:
         assert len(day_returns) == day_return_len, f"{len(day_returns) = }, {day_return_len = }"
         y = day_returns[n_pred:]
-        predictors = [day_returns[i: i + n_pred] for i in range(len(day_returns) - n_pred)]
+        predictors = [day_returns[i : i + n_pred] for i in range(len(day_returns) - n_pred)]
         result.append((predictors, y))
     return result
 

@@ -32,9 +32,9 @@ def count_n1_n2(prices):
 
 def count_runs(prices):
     cnt = 0
-    prev_direction = (prices[1] > prices[0])
+    prev_direction = prices[1] > prices[0]
     for i in range(2, len(prices)):
-        direction = (prices[i] > prices[i - 1])
+        direction = prices[i] > prices[i - 1]
         if direction != prev_direction:
             cnt += 1
             prev_direction = direction

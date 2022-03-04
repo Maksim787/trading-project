@@ -4,11 +4,14 @@ from matplotlib.ticker import FuncFormatter
 from typing import Tuple, Dict, List
 
 
-# read ticker.csv
-# return (prices_by_day, time)
-# prices_by_day[day] = цены внутри дня
-# time = время внутри дня, соответствует наблюдениям цен внутри дня
 def read_ticker(ticker: str) -> Tuple[Dict[str, List[float]], List[int]]:
+    """
+    read ticker.csv
+    :param ticker:
+    :return: (prices_by_day, time)
+    prices_by_day[day] = цены внутри дня
+    time = время внутри дня, соответствует наблюдениям цен внутри дня
+    """
     df = pd.read_csv(f"../data/clean_tickers/{ticker}.csv")
     groups = df.groupby("DATE")
     prices_by_day = groups["PRICE"].apply(list).to_dict()
@@ -17,8 +20,12 @@ def read_ticker(ticker: str) -> Tuple[Dict[str, List[float]], List[int]]:
     return prices_by_day, list_to_seconds(time)
 
 
-# t = 173100 = hh.mm.ss
 def to_seconds(t: int) -> int:
+    """
+
+    :param t: hh.mm.ss = 173100
+    :return: time in seconds
+    """
     t = str(t)
     assert len(t) == 6
     h = int(t[0:2])
@@ -39,8 +46,11 @@ def format_time(t: int):
     return f"{h}:{m:02d}"
 
 
-# d = 20150417 = yyyy.mm.dd
 def format_day(d: int) -> str:
+    """
+    :param d: yyyy.mm.d = 20150417
+    :return:
+    """
     d = str(d)
     return f"{d[6:8]}.{d[4:6]}.{d[0:4]}"
 
@@ -54,8 +64,12 @@ def get_at(index: float, time: List[int]) -> int:
     return time[index]
 
 
-# format time for x-axis
 def plot_with_time(time):
+    """
+    format time for x-axis
+    :param time:
+    :return:
+    """
     fig, ax = plt.subplots()
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x_val, tick_pos: format_time(get_at(x_val, time))))
     return fig, ax
@@ -67,9 +81,16 @@ def plot_with_days(days):
     return fig, ax
 
 
-# plot day prices
-# x: time; y: day_prices
 def plot_day_prices(prices_by_day, day, time, ticker=""):
+    """
+    plot day prices
+    x: time; y: day_prices
+    :param prices_by_day:
+    :param day:
+    :param time:
+    :param ticker:
+    :return:
+    """
     plot_with_time(time)
     plt.title(ticker + " " + format_day(day))
     plt.plot(prices_by_day[day])
