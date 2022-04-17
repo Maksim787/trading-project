@@ -41,7 +41,7 @@ def open_file(zip_ref):
             row[3] = str(int(row[3]) + date)
             writer = tickers.get(ticker)
             if writer is None:
-                writer = csv.writer(open(f"{dst_dir_name}/{ticker}.csv", "w", newline=''))
+                writer = csv.writer(open(f"{dst_dir_name}/{ticker}.csv", "w", newline=""))
                 writer.writerow(columns)
                 tickers[ticker] = writer
             writer.writerow(row)
