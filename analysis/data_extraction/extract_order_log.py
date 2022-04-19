@@ -1,66 +1,45 @@
-import os
-import shutil
-import zipfile
-import time
-import csv
-from io import TextIOWrapper
-
-os.chdir("../data")
-
-all_files = os.listdir()
-
-# make data/{dir_name} directory
-dst_dir_name = "tickers_order_log"
-if dst_dir_name in all_files:
-    # shutil.rmtree(dst_dir_name)
-    pass
-if dst_dir_name in all_files:
-    os.mkdir(dst_dir_name)
-
-assert "zip" in all_files, "data/zip folder not found"
-zip_files = ["zip/" + x for x in os.listdir("zip")]
-dates = []
-tickers = {}
+from analysis.data_extraction.data_extractor import DataExtractor
+from typing import Union
 
 
-def open_file(zip_ref):
-    files = zip_ref.namelist()
-    assert len(files) == 2
-    trade_log = next(filter(lambda x: x.startswith("TradeLog"), files))  # trades
-    order_log = next(filter(lambda x: x.startswith("OrderLog"), files))  # orders
-    date = zip_file.removeprefix("zip/OrderLog").removesuffix(".zip")
-    dates.append(date)
+def format_date(time, date):
     # date = "%Y%m%d%H%M%S%f"
-    date = 10 ** 9 * int(date)
-    # open
-    with zip_ref.open(order_log, "r") as f:
-        reader = csv.reader(TextIOWrapper(f, "utf-8"))
-        columns = next(reader)
-        for row in reader:
-            ticker = row[1]
-            row[3] = str(int(row[3]) + date)
-            writer = tickers.get(ticker)
-            if writer is None:
-                writer = csv.writer(open(f"{dst_dir_name}/{ticker}.csv", "w", newline=""))
-                writer.writerow(columns)
-                tickers[ticker] = writer
-            writer.writerow(row)
+    if len(time) == 12:
+        return date * (10 ** 12) + time
+    elif len(time) == 9:
+        return date * (10 ** 9) + time
+    else:
+        raise AssertionError
 
 
-print("Unzip")
+with open("allowed_tickers.txt") as f:
+    allowed_tickers = f.read().split()
 
-start = time.time()
-last = time.time()
 
-for i, zip_file in enumerate(zip_files, 1):
-    try:
-        with zipfile.ZipFile(zip_file, "r") as zip_ref:
-            open_file(zip_ref)
-            print(f"Opened {i}/{len(zip_files)}, time: {time.time() - last:.1f}, total: {time.time() - start:.1f} s")
-            last = time.time()
-    except zipfile.BadZipFile:
-        print(f"[ERROR] Не удалось считать {zip_file}")
+def format_row(row: list[str], date: int) -> Union[tuple[str, str], None]:
+    # row = [NO, SECCODE, BUYSELL, TIME, ORDERNO, ACTION, PRICE, VOLUME, TRADENO, TRADEPRICE]
+    # return (time, price, volume_change, direction: 0-buy, 1-sell)
+    if row[1] not in allowed_tickers or row[5] == "2":
+        return None
+    time = int(row[3])
+    if len(row[3]) == 9:
+        time += date * 10 ** 9
+        time *= 10 ** 3
+    elif len(row[3]) == 12:
+        time += date * 10 ** 12
+    else:
+        raise AssertionError
+    volume = row[7]
+    if row[5] == "0":
+        volume = "-" + volume
+    if row[2] == "B":
+        direction = "0"
+    elif row[2] == "S":
+        direction = "1"
+    else:
+        raise AssertionError
+    return " ".join([str(time), row[6], volume, direction, "\n"]), row[1]
 
-# write dates
-with open("dates.txt", "w") as f:
-    print(*dates, sep="\n", file=f)
+
+extractor = DataExtractor("../data/zip", "../data/tickers_order_log", format_row, ["OrderLog20150302.zip", "OrderLog20150522.zip"])
+extractor.extract_orderlog()
