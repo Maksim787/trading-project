@@ -36,7 +36,7 @@ class TestTradeLog(unittest.TestCase):
     def test_trade_log(self):
         strategy = TestStrategy("TEST_TICKER")
         tester = Tester("tester_trade_log/tests", strategy)
-        positions = tester.test()
+        tester.test()
         observations = [
             " ".join([str(date), str(price), str(volume)]) for date, price, volume in zip(strategy.dates, strategy.prices, strategy.volumes)
         ]

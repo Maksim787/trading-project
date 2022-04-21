@@ -1,5 +1,6 @@
 import datetime
 from typing import Union
+from tqdm import tqdm
 
 EXCHANGE_OPEN = datetime.time(10, 0, 0)
 EXCHANGE_CLOSE = datetime.time(18, 40, 0)
@@ -149,20 +150,22 @@ class Tester:
         self._price: Union[float, None] = None
         self._volume: Union[int, None] = None
         self._prices = []
+        self._day_close_prices = []
+        self._days: list[datetime.datetime] = []
 
         self._position: Union[OpenPosition, None] = None
-        self._positions_history: tuple[list[datetime.date], list[list[Trade]]] = ([], [])
+        self._trades_history: list[list[Trade]] = []
 
-    def test(self) -> tuple[list[datetime.date], list[list[Trade]]]:
+    def test(self):
         self._strategy.initialize(self)  # initialize strategy
         assert self._ticker and self._interval
-        for day_index, (day, intraday_iterator) in enumerate(DataIterator(f"{self._data_directory}/{self._ticker}.txt", self._interval)):
+        for day_index, (day, intraday_iterator) in tqdm(enumerate(DataIterator(f"{self._data_directory}/{self._ticker}.txt", self._interval))):
             if day_index < self._start_day_index:
                 continue
             if day_index >= self._start_day_index + self._trading_days:
                 break
-            self._positions_history[0].append(day)
-            self._positions_history[1].append([])
+            self._days.append(day)
+            self._trades_history.append([])
             started = False
             for time, price, volume in intraday_iterator:
                 self._datetime = time
@@ -178,7 +181,6 @@ class Tester:
                 if time.time() >= self._start_time:
                     self._on_tick()
             self._prices.clear()
-        return self._positions_history
 
     # strategy.initialize()
 
@@ -208,6 +210,9 @@ class Tester:
     def get_price(self) -> float:
         return self._price
 
+    def get_prices(self) -> list[float]:
+        return self._prices
+
     def get_volume(self) -> int:
         return self._volume
 
@@ -216,6 +221,20 @@ class Tester:
 
     def get_position(self) -> Union[OpenPosition, None]:
         return self._position
+
+    # general information
+
+    def get_day_close_prices(self) -> list[float]:
+        return self._day_close_prices
+
+    def get_trades_history(self) -> list[list[Trade]]:
+        return self._trades_history
+
+    def get_days(self) -> list[datetime.datetime]:
+        return self._days
+
+    def get_ticker(self) -> str:
+        return self._ticker
 
     def open_position(
         self,
@@ -238,7 +257,7 @@ class Tester:
 
     def close_position(self):
         assert self._position is not None
-        self._positions_history[1][-1].append(self._position.close(self._datetime, self._price))
+        self._trades_history[-1].append(self._position.close(self._datetime, self._price))
         self._position = None
 
     # utility functions
@@ -247,6 +266,7 @@ class Tester:
         self._strategy.on_finish(self)
         if self.is_open_position():
             self.close_position()
+        self._day_close_prices.append(self._price)
 
     def _on_tick(self):
         if self._position is not None:
