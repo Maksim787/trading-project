@@ -10,8 +10,8 @@ class RSIStrategy(Strategy):
         self.period = period
         self.start_day_index = start_day_index
         self.trading_days = trading_days
-        self.changes_sum = 0
         self.changes_queue = deque()
+        self.changes_sum = 0
         self.positive_changes_sum = 0
         self.last_price = 0
         self.first_tick = True
@@ -39,9 +39,9 @@ class RSIStrategy(Strategy):
         self.first_tick = False
         rsi = self.rsi()
         # decision
-        if self.rsi_history[-1] and rsi < 30:
+        if rsi < 30:
             t.open_position(duration=self.period)
-        self.rsi_history[-1].append(rsi)
+        self.rsi_history.append(rsi)
 
     def on_start(self, t: "Tester"):
         prices = np.array(t.get_prices())
@@ -51,10 +51,11 @@ class RSIStrategy(Strategy):
         self.changes_queue = deque(changes)
         self.changes_sum = np.abs(changes).sum()
         self.positive_changes_sum = changes[changes > 0].sum()
-        self.rsi_history.append([])
 
     def on_finish(self, t: "Tester"):
-        pass
+        self.rsi_history.clear()
+        self.changes_sum = 0
+        self.positive_changes_sum = 0
 
     def rsi(self):
         if not self.changes_sum:

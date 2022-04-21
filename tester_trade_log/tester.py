@@ -106,14 +106,14 @@ class Trade:
 
 class OpenPosition:
     def __init__(
-        self,
-        open_time: datetime.datetime,
-        interval: datetime.timedelta,
-        open_price: float,
-        duration: Union[int, None],
-        keep_silent_duration: bool,
-        take_profit: Union[float, None],
-        stop_loss: Union[float, None],
+            self,
+            open_time: datetime.datetime,
+            interval: datetime.timedelta,
+            open_price: float,
+            duration: Union[int, None],
+            keep_silent_duration: bool,
+            take_profit: Union[float, None],
+            stop_loss: Union[float, None],
     ):
         self.open_time = open_time
         self.open_price = open_price
@@ -156,10 +156,13 @@ class Tester:
         self._position: Union[OpenPosition, None] = None
         self._trades_history: list[list[Trade]] = []
 
-    def test(self):
+    def test(self, show_progress=True):
         self._strategy.initialize(self)  # initialize strategy
         assert self._ticker and self._interval
-        for day_index, (day, intraday_iterator) in tqdm(enumerate(DataIterator(f"{self._data_directory}/{self._ticker}.txt", self._interval))):
+        data_iterator = enumerate(DataIterator(f"{self._data_directory}/{self._ticker}.txt", self._interval))
+        if show_progress:
+            data_iterator = tqdm(data_iterator)
+        for day_index, (day, intraday_iterator) in data_iterator:
             if day_index < self._start_day_index:
                 continue
             if day_index >= self._start_day_index + self._trading_days:
@@ -176,10 +179,10 @@ class Tester:
                     self._strategy.on_start(self)
                     started = True
                 if time.time() >= self._finish_time:
-                    self._on_finish_day()
                     break
                 if started:
                     self._on_tick()
+            self._on_finish_day()
             self._prices.clear()
 
     # strategy.initialize()
@@ -237,11 +240,11 @@ class Tester:
         return self._ticker
 
     def open_position(
-        self,
-        duration: Union[None, int] = None,
-        keep_silent_duration=True,
-        take_profit: Union[float, None] = None,
-        stop_loss: Union[float, None] = None,
+            self,
+            duration: Union[None, int] = None,
+            keep_silent_duration=True,
+            take_profit: Union[float, None] = None,
+            stop_loss: Union[float, None] = None,
     ) -> OpenPosition:
         """
         Открывает позицию
