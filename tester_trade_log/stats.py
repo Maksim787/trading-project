@@ -16,5 +16,4 @@ def print_stats(tester: Tester):
     plt.legend()
     plt.title(f"{tester.get_ticker()}")
     plt.xlabel(f"{len(days)} рабочих дней")
-    plt.ylabel("Капитал")
     plt.show()

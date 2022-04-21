@@ -14,11 +14,8 @@ class TestStrategy(Strategy):
 
     def initialize(self, t):
         t.set_ticker(self.ticker)
-        t.set_interval(datetime.timedelta())
-        t.set_trading_days(5)
-        t.set_time_after_start(datetime.timedelta(minutes=60))
-        t.set_time_before_finish(datetime.timedelta(minutes=9))
         t.set_interval(datetime.timedelta(minutes=30))
+        t.set_trading_days(5)
 
     def tick(self, t):
         self.dates.append(t.get_datetime().strftime("%Y/%m/%d %H:%M:%S"))
@@ -44,6 +41,7 @@ class TestTradeLog(unittest.TestCase):
         self.assertEqual(
             observations,
             [
+                "2015/03/01 10:30:00 1.1 1",
                 "2015/03/01 11:00:00 1.1 0",
                 "2015/03/01 11:30:00 2.2 2",
                 "2015/03/01 12:00:00 8.8 12",

@@ -143,7 +143,7 @@ class Tester:
         self._start_day_index = 0
         self._trading_days = 0
         self._interval = datetime.timedelta()
-        self._start_time = EXCHANGE_OPEN
+        self._intervals_after_start = 0
         self._finish_time = EXCHANGE_CLOSE
 
         self._datetime: Union[datetime.datetime, None] = None
@@ -172,13 +172,13 @@ class Tester:
                 self._price = price
                 self._volume = volume
                 self._prices.append(price)
-                if not started and time.time() >= self._start_time:
+                if not started and len(self._prices) >= self._intervals_after_start:
                     self._strategy.on_start(self)
                     started = True
                 if time.time() >= self._finish_time:
                     self._on_finish_day()
                     break
-                if time.time() >= self._start_time:
+                if started:
                     self._on_tick()
             self._prices.clear()
 
@@ -196,11 +196,11 @@ class Tester:
     def set_trading_days(self, days: int):
         self._trading_days = days
 
-    def set_time_after_start(self, timedelta: datetime.timedelta):
-        self._start_time = _add_time(EXCHANGE_OPEN, timedelta)
+    def set_intervals_after_start(self, n_intervals: int):
+        self._intervals_after_start = n_intervals
 
-    def set_time_before_finish(self, timedelta: datetime.timedelta):
-        self._finish_time = _subtract_time(EXCHANGE_CLOSE, timedelta)
+    def set_intervals_before_finish(self, n_intervals: int):
+        self._finish_time = _subtract_time(EXCHANGE_CLOSE, n_intervals * self._interval)
 
     # strategy.test()
 

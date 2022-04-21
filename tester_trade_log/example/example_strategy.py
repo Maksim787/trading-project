@@ -14,8 +14,8 @@ class ExampleStrategy(Strategy):
     def initialize(self, t):
         t.set_ticker(self.ticker)
         t.set_interval(datetime.timedelta(minutes=1))
-        t.set_time_after_start(datetime.timedelta(minutes=15))
-        t.set_time_before_finish(datetime.timedelta(minutes=15))
+        t.set_intervals_after_start(15)
+        t.set_intervals_before_finish(15)
         t.set_trading_days(250)
 
     def tick(self, t):

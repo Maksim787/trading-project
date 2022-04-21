@@ -22,8 +22,8 @@ class RSIStrategy(Strategy):
         t.set_interval(datetime.timedelta(minutes=1))
         t.set_start_day_index(self.start_day_index)
         t.set_trading_days(self.trading_days)
-        t.set_time_after_start(datetime.timedelta(minutes=self.period))
-        t.set_time_before_finish(datetime.timedelta(minutes=self.period))
+        t.set_intervals_after_start(self.period)
+        t.set_intervals_before_finish(self.period)
 
     def tick(self, t: "Tester"):
         if not self.first_tick:
