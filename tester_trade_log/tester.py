@@ -106,14 +106,14 @@ class Trade:
 
 class OpenPosition:
     def __init__(
-            self,
-            open_time: datetime.datetime,
-            interval: datetime.timedelta,
-            open_price: float,
-            duration: Union[int, None],
-            keep_silent_duration: bool,
-            take_profit: Union[float, None],
-            stop_loss: Union[float, None],
+        self,
+        open_time: datetime.datetime,
+        interval: datetime.timedelta,
+        open_price: float,
+        duration: Union[int, None],
+        keep_silent_duration: bool,
+        take_profit: Union[float, None],
+        stop_loss: Union[float, None],
     ):
         self.open_time = open_time
         self.open_price = open_price
@@ -171,6 +171,8 @@ class Tester:
             self._trades_history.append([])
             started = False
             for time, price, volume in intraday_iterator:
+                if time.time() > self._finish_time:
+                    break
                 self._datetime = time
                 self._price = price
                 self._volume = volume
@@ -178,8 +180,6 @@ class Tester:
                 if not started and len(self._prices) >= self._intervals_after_start:
                     self._strategy.on_start(self)
                     started = True
-                if time.time() >= self._finish_time:
-                    break
                 if started:
                     self._on_tick()
             self._on_finish_day()
@@ -240,11 +240,11 @@ class Tester:
         return self._ticker
 
     def open_position(
-            self,
-            duration: Union[None, int] = None,
-            keep_silent_duration=True,
-            take_profit: Union[float, None] = None,
-            stop_loss: Union[float, None] = None,
+        self,
+        duration: Union[None, int] = None,
+        keep_silent_duration=True,
+        take_profit: Union[float, None] = None,
+        stop_loss: Union[float, None] = None,
     ) -> OpenPosition:
         """
         Открывает позицию
