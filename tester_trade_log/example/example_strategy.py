@@ -5,10 +5,9 @@ import random
 
 
 class ExampleStrategy(Strategy):
-    def __init__(self, ticker: str):
+    def __init__(self, ticker: str, days=250):
         self.ticker = ticker
-        self.cnt = 0
-        self.dates = set()
+        self.days = days
         random.seed(1)
 
     def initialize(self, t):
@@ -16,7 +15,7 @@ class ExampleStrategy(Strategy):
         t.set_interval(datetime.timedelta(minutes=1))
         t.set_intervals_after_start(15)
         t.set_intervals_before_finish(15)
-        t.set_trading_days(250)
+        t.set_trading_days(self.days)
 
     def tick(self, t):
         if random.random() < 0.05:

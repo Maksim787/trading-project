@@ -4,7 +4,7 @@ from tester_trade_log.stats import print_stats
 
 
 def main():
-    tester = Tester("analysis/data/tickers_trade_log", ExampleStrategy("AFKS"))
+    tester = Tester("analysis/data/tickers_trade_log", ExampleStrategy("AFKS", days=10))
     tester.test()
     print_stats(tester)
 

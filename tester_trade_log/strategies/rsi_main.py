@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 def get_tickers():
     tickers_files = os.listdir("analysis/data/tickers_trade_log")
-    return [file.removesuffix(".txt") for file in tickers_files]
+    return [file.removesuffix(".txt") for file in tickers_files if file != "cache"]
 
 
 tickers = get_tickers()
