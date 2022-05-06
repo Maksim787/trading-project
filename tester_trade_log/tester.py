@@ -77,14 +77,14 @@ class Trade:
 
 class OpenPosition:
     def __init__(
-            self,
-            open_time: datetime.datetime,
-            interval: datetime.timedelta,
-            open_price: float,
-            direction: DIRECTION,
-            duration: Union[int, None],
-            take_profit: Union[float, None],
-            stop_loss: Union[float, None],
+        self,
+        open_time: datetime.datetime,
+        interval: datetime.timedelta,
+        open_price: float,
+        direction: DIRECTION,
+        duration: Union[int, None],
+        take_profit: Union[float, None],
+        stop_loss: Union[float, None],
     ):
         self.open_time = open_time
         self.open_price = open_price
@@ -215,23 +215,23 @@ class Tester:
         return self._position is not None
 
     def buy(
-            self,
-            duration: Union[None, int] = None,
-            take_profit: Union[float, None] = None,
-            stop_loss: Union[float, None] = None,
+        self,
+        duration: Union[None, int] = None,
+        take_profit: Union[float, None] = None,
+        stop_loss: Union[float, None] = None,
     ):
         self.open_position(DIRECTION.LONG, duration, take_profit, stop_loss)
 
     def sell(
-            self,
-            duration: Union[None, int] = None,
-            take_profit: Union[float, None] = None,
-            stop_loss: Union[float, None] = None,
+        self,
+        duration: Union[None, int] = None,
+        take_profit: Union[float, None] = None,
+        stop_loss: Union[float, None] = None,
     ):
         self.open_position(DIRECTION.SHORT, duration, take_profit, stop_loss)
 
     def open_position(
-            self, direction, duration: Union[None, int] = None, take_profit: Union[float, None] = None, stop_loss: Union[float, None] = None
+        self, direction, duration: Union[None, int] = None, take_profit: Union[float, None] = None, stop_loss: Union[float, None] = None
     ):
         if self._position is not None:
             if self._position.direction == direction:
