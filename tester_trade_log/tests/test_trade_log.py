@@ -18,16 +18,16 @@ class TestStrategy(Strategy):
         t.set_interval(datetime.timedelta(minutes=30))
         t.set_trading_days(5)
 
-    def tick(self, t):
-        self.dates.append(t.get_datetime().strftime("%Y/%m/%d %H:%M:%S"))
-        self.prices.append(t.get_price())
-        self.volumes.append(t.get_volume())
+    def on_tick(self, t):
+        self.dates.append(t.get_current_time().strftime("%Y/%m/%d %H:%M:%S"))
+        self.prices.append(t.get_current_price())
+        self.volumes.append(t.get_current_volume())
 
     def on_start(self, t):
-        self.start_dates.append(t.get_datetime().strftime("%Y/%m/%d %H:%M:%S"))
+        self.start_dates.append(t.get_current_time().strftime("%Y/%m/%d %H:%M:%S"))
 
     def on_finish(self, t):
-        self.finish_dates.append(t.get_datetime().strftime("%Y/%m/%d %H:%M:%S"))
+        self.finish_dates.append(t.get_current_time().strftime("%Y/%m/%d %H:%M:%S"))
 
 
 class TestTradeStrategy(Strategy):
@@ -41,11 +41,13 @@ class TestTradeStrategy(Strategy):
         t.set_interval(datetime.timedelta(minutes=30))
         t.set_trading_days(5)
 
-    def tick(self, t):
+    def on_tick(self, t):
+        if t.is_open_position():
+            return
         if random.random() >= 0.5:
             duration = random.randint(1, 10)
             self.durations.append(duration)
-            t.open_position(duration=duration)
+            t.buy(duration=duration)
 
     def on_start(self, t):
         pass

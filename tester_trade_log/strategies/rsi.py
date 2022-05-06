@@ -25,10 +25,10 @@ class RSIStrategy(Strategy):
         t.set_intervals_after_start(self.period)
         t.set_intervals_before_finish(self.period)
 
-    def tick(self, t: "Tester"):
+    def on_tick(self, t: "Tester"):
         if not self.first_tick:
-            new_change = t.get_price() - self.last_price
-            self.last_price = t.get_price()
+            new_change = t.get_current_price() - self.last_price
+            self.last_price = t.get_current_price()
             old_change = self.changes_queue.popleft()
             self.changes_queue.append(new_change)
             self.changes_sum += abs(new_change) - abs(old_change)
@@ -40,11 +40,11 @@ class RSIStrategy(Strategy):
         rsi = self.rsi()
         # decision
         if rsi < 30:
-            t.open_position(duration=self.period)
+            t.buy(duration=self.period)
         self.rsi_history.append(rsi)
 
     def on_start(self, t: "Tester"):
-        prices = np.array(t.get_prices())
+        prices = np.array(t.get_today_price_history())
         self.last_price = prices[-1]
         assert len(prices) == self.period
         changes = np.diff(prices)

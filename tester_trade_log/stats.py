@@ -12,12 +12,12 @@ def sharpe_ratio(returns_by_day: np.array):
 
 def print_stats(tester: Tester, plot=True):
     returns_by_day = []
-    days = tester.get_days()
+    days = tester.get_days_history()
     trades_history = tester.get_trades_history()
     for day, trades in zip(days, trades_history):
-        returns = [trade.close_price / trade.open_price for trade in trades]
+        returns = [trade.profit_ratio() for trade in trades]
         returns_by_day.append(np.product(returns))
-    close_prices = np.array(tester.get_day_close_prices())
+    close_prices = np.array(tester.get_day_close_price_history())
     fig: Figure = plt.figure()
     plt.plot(days, close_prices / close_prices[0], label="Цена акции", color="red")
     plt.plot(days, np.cumprod(returns_by_day), label="Капитал стратегии", color="green")
