@@ -64,11 +64,11 @@ class Strategy:
 
 
 def _add_time(time: datetime.time, timedelta: datetime.timedelta):
-    return (datetime.datetime.combine(datetime.date(1, 1, 1), time) + timedelta).time()
+    return (datetime.datetime.combine(datetime.date.min, time) + timedelta).time()
 
 
 def _subtract_time(time: datetime.time, timedelta: datetime.timedelta):
-    return (datetime.datetime.combine(datetime.date(1, 1, 1), time) - timedelta).time()
+    return (datetime.datetime.combine(datetime.date.max, time) - timedelta).time()
 
 
 class Trade:
@@ -164,36 +164,35 @@ class Tester:
         # position
         self._position: Union[OpenPosition, None] = None
 
-    def test(self, show_progress=True):
+    def test(self, show_progress=False):
         self._strategy.initialize(self)  # initialize strategy
         assert self._ticker and self._period
-        with DataIterator(self._data_directory, self._ticker, self._period) as data_iterator:
-            data_iterator = enumerate(data_iterator)
-            if show_progress:
-                data_iterator = tqdm(data_iterator)
-            for day_index, (day, intraday_iterator) in data_iterator:
-                if day_index < self._start_day_index:
-                    continue
-                if day_index >= self._start_day_index + self._trading_days:
+        data_iterator = enumerate(DataIterator(self._data_directory, self._ticker, self._period))
+        if show_progress:
+            data_iterator = tqdm(data_iterator)
+        for day_index, (day, intraday_data) in data_iterator:
+            if day_index < self._start_day_index:
+                continue
+            if day_index >= self._start_day_index + self._trading_days:
+                break
+            self._on_start_day(day)
+            started = False
+            for i, (time, price, volume) in enumerate(intraday_data):
+                if time.time() > self._finish_time:
                     break
-                self._on_start_day(day)
-                started = False
-                for i, (time, price, volume) in enumerate(intraday_iterator):
-                    if time.time() > self._finish_time:
-                        break
-                    self._current_period_index = i
-                    self._current_time = time
-                    self._current_price = price
-                    self._current_volume = volume
-                    self._price_history.append(price)
-                    self._volume_history.append(volume)
-                    self._on_tick()
-                    if not started and self._current_period_index + 1 >= self._periods_after_start:
-                        self._on_start_day_strategy()
-                        started = True
-                    if started:
-                        self._on_tick_strategy()
-                self._on_finish_day(intraday_iterator)
+                self._current_period_index = i
+                self._current_time = time
+                self._current_price = price
+                self._current_volume = volume
+                self._price_history.append(price)
+                self._volume_history.append(volume)
+                self._on_tick()
+                if not started and self._current_period_index + 1 >= self._periods_after_start:
+                    self._on_start_day_strategy()
+                    started = True
+                if started:
+                    self._on_tick_strategy()
+            self._on_finish_day(intraday_data)
 
     # strategy.initialize()
 
@@ -295,13 +294,11 @@ class Tester:
     def _on_start_day_strategy(self):
         self._strategy.on_start(self)
 
-    def _on_finish_day(self, intraday_iterator):
+    def _on_finish_day(self, intraday_data):
         self._strategy.on_finish(self)
         if self.is_open_position():
             self.close_position()
-        close_price = self._current_price
-        for time, price, volume in intraday_iterator:
-            close_price = price
+        close_price = intraday_data[-1][1]
         self._day_close_price_history.append(close_price)
         for i, indicator in enumerate(self._indicators):
             if self._is_indicator_initialized[i]:
