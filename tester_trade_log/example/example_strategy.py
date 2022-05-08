@@ -1,4 +1,4 @@
-from tester_trade_log.tester import Strategy, DIRECTION
+from tester_trade_log.tester import Tester, Strategy, DIRECTION
 
 import datetime
 import random
@@ -10,15 +10,15 @@ class ExampleStrategy(Strategy):
         self.days = days
         random.seed(1)
 
-    def initialize(self, t):
+    def initialize(self, t: "Tester"):
         t.set_ticker(self.ticker)
-        t.set_interval(datetime.timedelta(minutes=1))
-        t.set_intervals_after_start(15)
-        t.set_intervals_before_finish(15)
+        t.set_period(datetime.timedelta(minutes=1))
+        t.set_periods_after_start(15)
+        t.set_periods_before_finish(15)
         t.set_start_day_index(0)
         t.set_trading_days(self.days)
 
-    def on_tick(self, t):
+    def on_tick(self, t: "Tester"):
         # positions
         if t.is_open_position():
             # position is open
@@ -45,10 +45,10 @@ class ExampleStrategy(Strategy):
         trades = t.get_trades_history()
         ticker = t.get_ticker()
 
-    def on_start(self, t):
+    def on_start(self, t: "Tester"):
         # today start
         pass
 
-    def on_finish(self, t):
+    def on_finish(self, t: "Tester"):
         # today finish
         pass

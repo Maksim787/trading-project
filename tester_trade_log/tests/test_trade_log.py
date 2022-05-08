@@ -15,7 +15,7 @@ class TestStrategy(Strategy):
 
     def initialize(self, t):
         t.set_ticker(self.ticker)
-        t.set_interval(datetime.timedelta(minutes=30))
+        t.set_period(datetime.timedelta(minutes=30))
         t.set_trading_days(5)
 
     def on_tick(self, t):
@@ -38,7 +38,7 @@ class TestTradeStrategy(Strategy):
     def initialize(self, t):
         random.seed(1)
         t.set_ticker(self.ticker)
-        t.set_interval(datetime.timedelta(minutes=30))
+        t.set_period(datetime.timedelta(minutes=30))
         t.set_trading_days(5)
 
     def on_tick(self, t):

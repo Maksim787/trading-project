@@ -5,6 +5,26 @@ from tester_trade_log.data_iterator import DataIterator
 from tester_trade_log.constants import EXCHANGE_CLOSE, DIRECTION
 
 
+class Indicator:
+    def get_init_periods(self) -> int:
+        raise NotImplementedError
+
+    def initialize(self, t: "Tester"):
+        raise NotImplementedError
+
+    def on_tick(self, t: "Tester"):
+        raise NotImplementedError
+
+    def get_current_value(self):
+        raise NotImplementedError
+
+    def get_values_history(self):
+        raise NotImplementedError
+
+    def clear(self, t: "Tester"):
+        raise NotImplementedError
+
+
 class Strategy:
     def initialize(self, t: "Tester"):
         """
@@ -79,7 +99,7 @@ class OpenPosition:
     def __init__(
         self,
         open_time: datetime.datetime,
-        interval: datetime.timedelta,
+        period: datetime.timedelta,
         open_price: float,
         direction: DIRECTION,
         duration: Union[int, None],
@@ -89,7 +109,7 @@ class OpenPosition:
         self.open_time = open_time
         self.open_price = open_price
         self.direction = direction
-        self.expected_close = open_time + interval * duration if duration is not None else None
+        self.expected_close = open_time + period * duration if duration is not None else None
         self.take_profit = take_profit if take_profit is not None else float("+inf") * direction.value
         self.stop_loss = stop_loss if stop_loss is not None else float("-inf") * direction.value
 
@@ -114,14 +134,17 @@ class Tester:
         :param strategy:
         """
         self._data_directory = data_directory
-        self._strategy = strategy
+        self._strategy: Strategy = strategy
+        self._indicators: list[Indicator] = []
+        self._is_indicator_initialized: list[bool] = []
         self._ticker = ""
 
         # time
         self._start_day_index = 0
         self._trading_days = 0
-        self._interval = datetime.timedelta()
-        self._intervals_after_start = 0
+        self._period = datetime.timedelta()
+        self._periods_after_start = 0
+        self._current_period_index = 0
         self._finish_time = EXCHANGE_CLOSE
 
         # current values
@@ -143,8 +166,8 @@ class Tester:
 
     def test(self, show_progress=True):
         self._strategy.initialize(self)  # initialize strategy
-        assert self._ticker and self._interval
-        with DataIterator(self._data_directory, self._ticker, self._interval) as data_iterator:
+        assert self._ticker and self._period
+        with DataIterator(self._data_directory, self._ticker, self._period) as data_iterator:
             data_iterator = enumerate(data_iterator)
             if show_progress:
                 data_iterator = tqdm(data_iterator)
@@ -153,31 +176,32 @@ class Tester:
                     continue
                 if day_index >= self._start_day_index + self._trading_days:
                     break
-                self._days_history.append(day)
-                self._trades_history.append([])
+                self._on_start_day(day)
                 started = False
-                for time, price, volume in intraday_iterator:
+                for i, (time, price, volume) in enumerate(intraday_iterator):
                     if time.time() > self._finish_time:
                         break
+                    self._current_period_index = i
                     self._current_time = time
                     self._current_price = price
                     self._current_volume = volume
                     self._price_history.append(price)
                     self._volume_history.append(volume)
-                    if not started and len(self._price_history) >= self._intervals_after_start:
-                        self._strategy.on_start(self)
+                    self._on_tick()
+                    if not started and self._current_period_index + 1 >= self._periods_after_start:
+                        self._on_start_day_strategy()
                         started = True
                     if started:
-                        self._on_tick()
-                self._on_finish_day()
+                        self._on_tick_strategy()
+                self._on_finish_day(intraday_iterator)
 
     # strategy.initialize()
 
     def set_ticker(self, ticker: str):
         self._ticker = ticker
 
-    def set_interval(self, interval: datetime.timedelta):
-        self._interval = interval
+    def set_period(self, period: datetime.timedelta):
+        self._period = period
 
     def set_start_day_index(self, day_index: int):
         self._start_day_index = day_index
@@ -185,11 +209,14 @@ class Tester:
     def set_trading_days(self, days: int):
         self._trading_days = days
 
-    def set_intervals_after_start(self, n_intervals: int):
-        self._intervals_after_start = n_intervals
+    def set_periods_after_start(self, n_periods: int):
+        self._periods_after_start = n_periods
 
-    def set_intervals_before_finish(self, n_intervals: int):
-        self._finish_time = _subtract_time(EXCHANGE_CLOSE, n_intervals * self._interval)
+    def set_periods_before_finish(self, n_periods: int):
+        self._finish_time = _subtract_time(EXCHANGE_CLOSE, n_periods * self._period)
+
+    def add_indicator(self, indicator: Indicator):
+        self._indicators.append(indicator)
 
     # strategy.on_tick()
 
@@ -238,7 +265,7 @@ class Tester:
                 return
             else:
                 self.close_position()
-        self._position = OpenPosition(self._current_time, self._interval, self._current_price, DIRECTION.LONG, duration, take_profit, stop_loss)
+        self._position = OpenPosition(self._current_time, self._period, self._current_price, DIRECTION.LONG, duration, take_profit, stop_loss)
 
     def close_position(self):
         if self._position is None:
@@ -260,15 +287,37 @@ class Tester:
         return self._ticker
 
     # utility functions
-    def _on_finish_day(self):
+    def _on_start_day(self, day):
+        self._days_history.append(day)
+        self._trades_history.append([])
+        self._is_indicator_initialized = [False] * len(self._indicators)
+
+    def _on_start_day_strategy(self):
+        self._strategy.on_start(self)
+
+    def _on_finish_day(self, intraday_iterator):
         self._strategy.on_finish(self)
         if self.is_open_position():
             self.close_position()
-        self._day_close_price_history.append(self._current_price)
+        close_price = self._current_price
+        for time, price, volume in intraday_iterator:
+            close_price = price
+        self._day_close_price_history.append(close_price)
+        for i, indicator in enumerate(self._indicators):
+            if self._is_indicator_initialized[i]:
+                indicator.clear(self)
         self._price_history.clear()
         self._volume_history.clear()
 
     def _on_tick(self):
+        for i, indicator in enumerate(self._indicators):
+            if not self._is_indicator_initialized[i] and self._current_period_index + 1 == indicator.get_init_periods():
+                self._is_indicator_initialized[i] = True
+                indicator.initialize(self)
+            elif self._is_indicator_initialized[i]:
+                indicator.on_tick(self)
+
+    def _on_tick_strategy(self):
         if self._position is not None:
             if self._position.check_close(self._current_price, self._current_time):
                 self.close_position()

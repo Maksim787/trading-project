@@ -1,4 +1,4 @@
-from tester_trade_log.strategies.rsi import RSIStrategy
+from tester_trade_log.strategies.rsi_strategy import RSIStrategy
 from tester_trade_log.tester import Tester
 from tester_trade_log.stats import print_stats
 
