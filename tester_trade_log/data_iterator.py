@@ -45,6 +45,8 @@ class DataIterator:
         self._period: datetime.timedelta = period
 
         cache_directory = os.path.join(self._data_directory, "cache")
+        if "cache" not in os.listdir(self._data_directory):
+            os.mkdir(cache_directory)
         cache_file_name = f"{self._ticker}.{self._period.total_seconds()}.txt"
         self._cache_full_path = os.path.join(cache_directory, cache_file_name)
         if cache_file_name not in os.listdir(cache_directory):
@@ -104,10 +106,14 @@ class DataIterator:
                 intraday_data = []
                 row = cache_file.readline().split()
                 while len(row) == row_size:
-                    intraday_data.append([datetime.datetime.combine(day, datetime.datetime.strptime(row[0], "%H%M%S").time()),
-                                          float(row[1]),
-                                          float(row[2]),
-                                          float(row[3]),
-                                          int(row[4])])
+                    intraday_data.append(
+                        [
+                            datetime.datetime.combine(day, datetime.datetime.strptime(row[0], "%H%M%S").time()),
+                            float(row[1]),
+                            float(row[2]),
+                            float(row[3]),
+                            int(row[4]),
+                        ]
+                    )
                     row = cache_file.readline().split()
                 yield day, intraday_data

@@ -4,15 +4,13 @@ import datetime
 
 
 class RSIStrategy(Strategy):
-    def __init__(self, ticker, length, start_day_index, trading_days):
-        self._ticker = ticker
+    def __init__(self, length, start_day_index, trading_days):
         self._length = length
         self._start_day_index = start_day_index
         self._trading_days = trading_days
         self._rsi = RSI(length)
 
     def initialize(self, t: "Tester"):
-        t.set_ticker(self._ticker)
         t.set_period(datetime.timedelta(minutes=1))
         t.set_start_day_index(self._start_day_index)
         t.set_trading_days(self._trading_days)
@@ -27,6 +25,8 @@ class RSIStrategy(Strategy):
         # decision
         if rsi < 30:
             t.buy(duration=self._length)
+        if rsi > 70:
+            t.sell(duration=self._length)
 
     def on_start(self, t: "Tester"):
         pass

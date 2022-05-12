@@ -1,8 +1,9 @@
-import datetime
-from typing import Union
-from tqdm import tqdm
 from tester_trade_log.data_iterator import DataIterator
 from tester_trade_log.constants import EXCHANGE_CLOSE, DIRECTION
+
+import datetime
+
+from typing import Union
 
 
 class Indicator:
@@ -83,11 +84,10 @@ class Trade:
         self.close_time = close_time
         self.close_price = close_price
 
-    def profit_ratio(self):
+    def profit_ratio(self) -> float:
         """
-        Возвращает коэффициент, на который умножается капитал, вложенный в сделку
 
-        :return:
+        :return: коэффициент, на который умножается капитал, вложенный в сделку
         """
         return 1 + (self.close_price - self.open_price) * self.direction.value / self.open_price
 
@@ -127,7 +127,7 @@ class OpenPosition:
 
 
 class Tester:
-    def __init__(self, data_directory: str, strategy: Strategy):
+    def __init__(self, data_directory: str, strategy: Strategy, ticker: str = ""):
         """
 
         :param data_directory: директория с данными
@@ -137,7 +137,7 @@ class Tester:
         self._strategy: Strategy = strategy
         self._indicators: list[Indicator] = []
         self._is_indicator_initialized: list[bool] = []
-        self._ticker = ""
+        self._ticker = ticker
 
         # time
         self._start_day_index = 0
@@ -164,13 +164,10 @@ class Tester:
         # position
         self._position: Union[OpenPosition, None] = None
 
-    def test(self, show_progress=False):
+    def test(self):
         self._strategy.initialize(self)  # initialize strategy
         assert self._ticker and self._period
-        data_iterator = enumerate(DataIterator(self._data_directory, self._ticker, self._period))
-        if show_progress:
-            data_iterator = tqdm(data_iterator)
-        for day_index, (day, intraday_data) in data_iterator:
+        for day_index, (day, intraday_data) in enumerate(DataIterator(self._data_directory, self._ticker, self._period)):
             if day_index < self._start_day_index:
                 continue
             if day_index >= self._start_day_index + self._trading_days:
@@ -264,7 +261,7 @@ class Tester:
                 return
             else:
                 self.close_position()
-        self._position = OpenPosition(self._current_time, self._period, self._price_history[-1], DIRECTION.LONG, duration, take_profit, stop_loss)
+        self._position = OpenPosition(self._current_time, self._period, self._price_history[-1], direction, duration, take_profit, stop_loss)
 
     def close_position(self):
         if self._position is None:
@@ -284,6 +281,15 @@ class Tester:
 
     def get_ticker(self) -> str:
         return self._ticker
+
+    def clear(self):
+        self._data_directory = None
+        self._strategy = None
+        self._indicators = None
+        self._is_indicator_initialized = None
+        self._ticker = None
+        self._day_close_price_history = None
+        self._days_history = None
 
     # utility functions
     def _on_start_day(self, day):
@@ -305,6 +311,8 @@ class Tester:
                 indicator.clear(self)
         self._price_history.clear()
         self._volume_history.clear()
+        self._high_history.clear()
+        self._low_history.clear()
 
     def _on_tick(self):
         for i, indicator in enumerate(self._indicators):
