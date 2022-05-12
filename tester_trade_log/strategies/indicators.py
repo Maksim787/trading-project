@@ -1,4 +1,4 @@
-from tester_trade_log.tester import Indicator, Strategy
+from tester_trade_log.tester import Indicator, Tester
 from collections import deque
 
 
@@ -15,8 +15,9 @@ class SMA(Indicator):
         self._len_of_window = len_of_window
         self._mode = mode
         self._wait = wait
-        self._history_of_prices = deque()
-        self._history_of_volume = deque()
+        self._history = list()
+        self._memory_of_prices = deque()
+        self._memory_of_volume = deque()
         self._sma_numerator = 0
         self._sma_denominator = 0
         self._num_of_time_slot = 0
@@ -24,7 +25,14 @@ class SMA(Indicator):
         self._new_volume = 0
         self._total_tact = tact * len_of_window
 
-    def compute_indicator(self, price: int, volume: int, time: int):
+    def initialize(self, t: "Tester"):
+        # todo Запихать начальные данные
+        pass
+
+    def on_tick(self, t: "Tester"):
+        self.compute_indicator(t.get_current_price(), t.get_current_volume(), t.get_current_time())
+
+    def compute_indicator(self, price: int, volume: int):
         self._num_of_time_slot += 1
         self._new_price = price
         self._new_volume += volume
@@ -50,19 +58,23 @@ class SMA(Indicator):
             self._sma_denominator = 0
         pass
 
-    def on_finish(self, day: int):
+    def clear(self, t: "Tester"):
         self._num_of_time_slot = 1
-        self._history_of_prices.clear()
-        self._history_of_volume.clear()
+        self._history = []
+        self._memory_of_prices.clear()
+        self._memory_of_volume.clear()
         self._new_price = 0
         self._new_volume = 0
 
-    def get_activation_time(self):
+    def get_init_periods(self):
         return self._wait * self._tact * self._len_of_window
 
-    def get_value(self):
+    def get_current_value(self):
         assert self._wait is False or self._num_of_time_slot > self._total_tact and self._sma_denominator > 0
         return self._sma_numerator / self._sma_denominator
+
+    def get_values_history(self):
+        return self._history
 
 
 class EMA(Indicator):
@@ -76,27 +88,34 @@ class EMA(Indicator):
         self._tact = tact
         self._k = k
         self._time = time
+        self._history = []
         self._ema = 0
         self._num_of_time_slot = 0
         pass
 
-    def compute_indicator(self, price: int, volume: int, time: int):
+    def initialize(self, t: "Tester"):
+        # todo Инициализировать данные на старте
+        pass
+
+    def on_tick(self, t: "Tester"):
         self._num_of_time_slot += 1
         if self._num_of_time_slot % self._tact == 0:
-            self._ema = price * self.k + self._ema * (1 - self._k)
+            self._ema = t.get_current_price() * self.k + self._ema * (1 - self._k)
+            self._history.append(self._ema)
 
-    def on_finish(self, day: int):
+    def clear(self, t: "Tester"):
         self._ema = 0
         self._num_of_time_slot = 0
-        pass
+        self._history.clear()
 
-    def get_activation_time(self):
+    def get_init_periods(self):
         return self._time * self._tact
-        pass
 
-    def get_value(self):
+    def get_current_value(self):
         return self._ema
-        pass
+
+    def get_values_history(self):
+        return self._history
 
 
 class MACD(Indicator):
@@ -107,20 +126,27 @@ class MACD(Indicator):
         self._sma = SMA(tact, len_of_window, "simple", wait)
         self._delta = 0
 
-    def compute_indicator(self, price: int, volume: int, time: int):
-        self._long_ema.compute_indicator(price, volume, time)
-        self._short_ema.compute_indicator(price, volume, time)
-        self._delta = self._long_ema.get_value() - self._short_ema.get_value()
-        self._sma.compute_indicator(self._delta, volume, time)
-
-    def on_finish(self, day: int):
-        self._long_ema.on_finish(day)
-        self._short_ema.on_finish(day)
-        self._sma.on_finish(day)
+    def initialize(self, t: "Tester"):
         pass
 
-    def get_activation_time(self):
-        return self._sma.get_activation_time()
+    def on_tick(self, t: "Tester"):
+        self._long_ema.on_tick(t)
+        self._short_ema.on_tick(t)
+        self._delta = self._long_ema.get_current_value() - self._short_ema.get_current_value()
+        self._sma.compute_indicator(self._delta, t.get_current_volume())
 
-    def get_value(self):
-        return self._delta - self._sma.get_value()
+    def clear(self, t: "Tester"):
+        self._long_ema.clear(t)
+        self._short_ema.clear(t)
+        self._sma.clear(t)
+        pass
+
+    def get_init_periods(self):
+        return self._sma.get_init_periods()
+
+    def get_current_value(self):
+        return self._delta - self._sma.get_current_value()
+
+    def get_values_history(self):
+        return
+        pass
