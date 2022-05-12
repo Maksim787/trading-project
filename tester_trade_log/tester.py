@@ -149,11 +149,11 @@ class Tester:
 
         # current values
         self._current_time: Union[datetime.datetime, None] = None
-        self._current_price: Union[float, None] = None
-        self._current_volume: Union[int, None] = None
 
         # today history values
         self._price_history: list[float] = []
+        self._high_history: list[float] = []
+        self._low_history: list[float] = []
         self._volume_history: list[int] = []
 
         # day history values
@@ -177,15 +177,15 @@ class Tester:
                 break
             self._on_start_day(day)
             started = False
-            for i, (time, price, volume) in enumerate(intraday_data):
+            for i, (time, price, high, low, volume) in enumerate(intraday_data):
                 if time.time() > self._finish_time:
                     break
                 self._current_period_index = i
                 self._current_time = time
-                self._current_price = price
-                self._current_volume = volume
                 self._price_history.append(price)
                 self._volume_history.append(volume)
+                self._high_history.append(high)
+                self._low_history.append(low)
                 self._on_tick()
                 if not started and self._current_period_index + 1 >= self._periods_after_start:
                     self._on_start_day_strategy()
@@ -224,10 +224,10 @@ class Tester:
         return self._current_time
 
     def get_current_price(self) -> float:
-        return self._current_price
+        return self._price_history[-1]
 
     def get_current_volume(self) -> int:
-        return self._current_volume
+        return self._volume_history[-1]
 
     # today history values
     def get_today_price_history(self) -> list[float]:
@@ -264,12 +264,12 @@ class Tester:
                 return
             else:
                 self.close_position()
-        self._position = OpenPosition(self._current_time, self._period, self._current_price, DIRECTION.LONG, duration, take_profit, stop_loss)
+        self._position = OpenPosition(self._current_time, self._period, self._price_history[-1], DIRECTION.LONG, duration, take_profit, stop_loss)
 
     def close_position(self):
         if self._position is None:
             return
-        self._trades_history[-1].append(self._position.close(self._current_time, self._current_price))
+        self._trades_history[-1].append(self._position.close(self._current_time, self._price_history[-1]))
         self._position = None
 
     # general information
@@ -316,6 +316,6 @@ class Tester:
 
     def _on_tick_strategy(self):
         if self._position is not None:
-            if self._position.check_close(self._current_price, self._current_time):
+            if self._position.check_close(self._price_history[-1], self._current_time):
                 self.close_position()
         self._strategy.on_tick(self)
