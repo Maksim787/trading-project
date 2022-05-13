@@ -2,7 +2,7 @@ from tester_trade_log.stats import StrategyTester
 from tester_trade_log.strategies.rsi_strategy import RSIStrategy
 
 
-def strategy_getter():
+def strategy_getter(ticker=None):
     return RSIStrategy(14, 10, 0, 199)
 
 

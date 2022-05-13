@@ -29,7 +29,7 @@ class StrategyTester:
         tickers_iterator = tqdm(self._tickers)
         for ticker in tickers_iterator:
             tickers_iterator.set_description(ticker)
-            tester = Tester(self._data_directory, self._strategy_getter(), ticker=ticker)
+            tester = Tester(self._data_directory, self._strategy_getter(ticker=ticker), ticker=ticker)
             tester.test()
             if not self._days:
                 self._days = tester.get_days_history()
