@@ -7,7 +7,7 @@ class PeriodData:
     def __init__(self, period: datetime.timedelta, time: datetime.datetime, price: float, volume: int):
         self.period = period
         self.time = self._format_period_time(time)
-        self.price = price
+        self.close = price
         self.high = price
         self.low = price
         self.volume = volume
@@ -19,7 +19,7 @@ class PeriodData:
 
     def add_data(self, time: datetime.datetime, price: float, volume: int):
         assert self.time <= time < self.time + self.period
-        self.price = price
+        self.close = price
         self.high = max(self.high, price)
         self.low = min(self.low, price)
         self.volume += volume
@@ -29,13 +29,13 @@ class PeriodData:
 
     def get_data(self) -> str:
         self.time += self.period
-        row = f"{self.time.strftime('%H%M%S')} {self.price} {self.high} {self.low} {self.volume}\n"
-        self.high = self.low = self.price
+        row = f"{self.time.strftime('%H%M%S')} {self.close} {self.high} {self.low} {self.volume}\n"
+        self.high = self.low = self.close
         self.volume = 0
         return row
 
     def format_row(self) -> str:
-        return f"{self.time.strftime('%H%M%S')} {self.price} {self.high} {self.low} {self.volume}\n"
+        return f"{self.time.strftime('%H%M%S')} {self.close} {self.high} {self.low} {self.volume}\n"
 
 
 class DataIterator:
@@ -103,17 +103,17 @@ class DataIterator:
             while row:
                 day, n_observations = row
                 day = datetime.datetime.strptime(day, "%Y%m%d").date()
-                intraday_data = []
+                time = []
+                close = []
+                high = []
+                low = []
+                volume = []
                 row = cache_file.readline().split()
                 while len(row) == row_size:
-                    intraday_data.append(
-                        [
-                            datetime.datetime.combine(day, datetime.datetime.strptime(row[0], "%H%M%S").time()),
-                            float(row[1]),
-                            float(row[2]),
-                            float(row[3]),
-                            int(row[4]),
-                        ]
-                    )
+                    time.append(datetime.datetime.combine(day, datetime.datetime.strptime(row[0], "%H%M%S").time()))
+                    close.append(float(row[1]))
+                    high.append(float(row[2]))
+                    low.append(float(row[3]))
+                    volume.append(int(row[4]))
                     row = cache_file.readline().split()
-                yield day, intraday_data
+                yield day, (time, close, high, low, volume)

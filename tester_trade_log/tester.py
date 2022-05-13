@@ -174,7 +174,7 @@ class Tester:
                 break
             self._on_start_day(day)
             started = False
-            for i, (time, price, high, low, volume) in enumerate(intraday_data):
+            for i, (time, price, high, low, volume) in enumerate(zip(*intraday_data)):
                 if time.time() > self._finish_time:
                     break
                 self._current_period_index = i

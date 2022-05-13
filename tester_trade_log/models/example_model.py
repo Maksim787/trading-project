@@ -79,7 +79,7 @@ class Model:
         for day_index, (day, intraday_iterator) in tqdm(data_iterator):
             intraday_history = []
             intraday_price = []
-            for i, (time, price, high, low, volume) in enumerate(intraday_iterator):
+            for i, (time, price, high, low, volume) in enumerate(zip(*intraday_iterator)):
                 intraday_history.append([price, volume])
                 intraday_price.append(price)
             df = pd.DataFrame(intraday_history, columns=["close", "volume"])
