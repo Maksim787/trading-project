@@ -7,8 +7,9 @@ import pandas as pd
 
 
 class RSIStrategy(Strategy):
-    def __init__(self, length, start_day_index, trading_days):
+    def __init__(self, length, duration, start_day_index, trading_days):
         self._length = length
+        self._duration = duration
         self._start_day_index = start_day_index
         self._trading_days = trading_days
 
@@ -31,9 +32,9 @@ class RSIStrategy(Strategy):
         rsi = t.get_current_indicator(0)
         # decision
         if rsi < 30:
-            t.buy(duration=self._length)
+            t.buy(duration=self._duration)
         if rsi > 70:
-            t.sell(duration=self._length)
+            t.sell(duration=self._duration)
 
     def on_start(self, t: "Tester"):
         pass

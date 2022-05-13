@@ -1,12 +1,10 @@
 from tester_trade_log.tester import Tester, Trade, DIRECTION
-from matplotlib.pyplot import Figure
 
 import os
 import datetime
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from typing import Callable
 
@@ -54,6 +52,10 @@ class StrategyTester:
             direction_trades.append([trade for trade in trade_list if trade.direction == direction])
         return direction_trades
 
+    @staticmethod
+    def profit_ratio(returns):
+        return (returns > 0).sum() / len(returns) * 100
+
     def get_stats(self):
         records = []
         for ticker in self._tickers:
@@ -69,19 +71,26 @@ class StrategyTester:
             returns_by_day_long = self._get_returns_by_day(long_trades)
             returns_by_day_short = self._get_returns_by_day(short_trades)
 
+            total_profitable = self.profit_ratio(returns_by_day)
+            long_profitable = self.profit_ratio(returns_by_day_long)
+            short_profitable = self.profit_ratio(returns_by_day_short)
+
             mean, std = returns_by_day.mean(), returns_by_day.std()
             record = {
                 "mean": mean,
                 "std": std,
                 "sharpe": mean / std,
                 "total trades": long_trades_cnt + short_trades_cnt,
+                "total profitability": total_profitable,
                 "long trades": long_trades_cnt,
                 "short trades": short_trades_cnt,
                 "long/short ratio": long_trades_cnt / short_trades_cnt,
                 "long mean": returns_by_day_long.mean(),
                 "long std": returns_by_day_long.std(),
+                "long profitability": long_profitable,
                 "short mean": returns_by_day_short.mean(),
                 "short std": returns_by_day_short.std(),
+                "short profitability": short_profitable,
             }
             records.append(record)
         df = pd.DataFrame.from_records(records, index=self._tickers)
@@ -93,7 +102,7 @@ class StrategyTester:
             print(
                 f"{ticker}:\t"
                 f"sharpe: {row['sharpe']:.2f}\t"
-                f"total: {row['mean']:.2f} ± {row['std']:.2f} ({row['total trades']:4.1f} trades)\t"
-                f"long: {row['long mean']:.2f} ± {row['long std']:.2f} ({row['long trades'] / row['total trades'] * 100:.1f}%)\t"
-                f"short: {row['short mean']:.2f} ± {row['short std']:.2f} ({row['short trades'] / row['total trades'] * 100:.1f}%)"
+                f"total: {row['mean']:.2f} ± {row['std']:.2f} ({row['total trades']:4.1f} trades), {row['total profitability']:.1f}% profitable\t"
+                f"long: {row['long mean']:.2f} ± {row['long std']:.2f} ({row['long trades'] / row['total trades'] * 100:.1f}%), {row['long profitability']:.1f}% profitable\t"
+                f"short: {row['short mean']:.2f} ± {row['short std']:.2f} ({row['short trades'] / row['total trades'] * 100:.1f}%), {row['short profitability']:.1f}% profitable"
             )
