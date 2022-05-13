@@ -93,7 +93,7 @@ class StrategyTester:
             print(
                 f"{ticker}:\t"
                 f"sharpe: {row['sharpe']:.2f}\t"
-                f"total: {row['mean']:.2f} ± {row['std']:.2f} ({row['total trades']:.1f} trades)\t"
+                f"total: {row['mean']:.2f} ± {row['std']:.2f} ({row['total trades']:4.1f} trades)\t"
                 f"long: {row['long mean']:.2f} ± {row['long std']:.2f} ({row['long trades'] / row['total trades'] * 100:.1f}%)\t"
                 f"short: {row['short mean']:.2f} ± {row['short std']:.2f} ({row['short trades'] / row['total trades'] * 100:.1f}%)"
             )

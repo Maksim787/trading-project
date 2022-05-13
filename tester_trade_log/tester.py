@@ -3,27 +3,7 @@ from tester_trade_log.constants import EXCHANGE_CLOSE, DIRECTION
 
 import datetime
 
-from typing import Union
-
-
-class Indicator:
-    def get_init_periods(self) -> int:
-        raise NotImplementedError
-
-    def initialize(self, t: "Tester"):
-        raise NotImplementedError
-
-    def on_tick(self, t: "Tester"):
-        raise NotImplementedError
-
-    def get_current_value(self):
-        raise NotImplementedError
-
-    def get_values_history(self):
-        raise NotImplementedError
-
-    def clear(self, t: "Tester"):
-        raise NotImplementedError
+from typing import Union, Callable
 
 
 class Strategy:
@@ -135,8 +115,8 @@ class Tester:
         """
         self._data_directory = data_directory
         self._strategy: Strategy = strategy
-        self._indicators: list[Indicator] = []
-        self._is_indicator_initialized: list[bool] = []
+        self._indicators: list = []
+        self._indicators_values: list = []
         self._ticker = ticker
 
         # time
@@ -172,7 +152,7 @@ class Tester:
                 continue
             if day_index >= self._start_day_index + self._trading_days:
                 break
-            self._on_start_day(day)
+            self._on_start_day(day, intraday_data)
             started = False
             for i, (time, price, high, low, volume) in enumerate(zip(*intraday_data)):
                 if time.time() > self._finish_time:
@@ -211,7 +191,7 @@ class Tester:
     def set_periods_before_finish(self, n_periods: int):
         self._finish_time = _subtract_time(EXCHANGE_CLOSE, n_periods * self._period)
 
-    def add_indicator(self, indicator: Indicator):
+    def add_indicator(self, indicator: Callable):
         self._indicators.append(indicator)
 
     # strategy.on_tick()
@@ -226,12 +206,18 @@ class Tester:
     def get_current_volume(self) -> int:
         return self._volume_history[-1]
 
+    def get_current_indicator(self, index):
+        return self._indicators_values[index][self._current_period_index]
+
     # today history values
     def get_today_price_history(self) -> list[float]:
         return self._price_history
 
     def get_today_volume_history(self) -> list[int]:
         return self._volume_history
+
+    def get_today_indicator_history(self, index):
+        return self._indicators_values[index][: self._current_period_index + 1]
 
     # position handling
     def is_open_position(self) -> bool:
@@ -286,16 +272,16 @@ class Tester:
         self._data_directory = None
         self._strategy = None
         self._indicators = None
-        self._is_indicator_initialized = None
         self._ticker = None
         self._day_close_price_history = None
         self._days_history = None
 
     # utility functions
-    def _on_start_day(self, day):
+    def _on_start_day(self, day, intraday_data):
         self._days_history.append(day)
         self._trades_history.append([])
-        self._is_indicator_initialized = [False] * len(self._indicators)
+        time, close, high, low, volume = intraday_data
+        self._indicators_values = [indicator(close=close, high=high, low=low, volume=volume) for indicator in self._indicators]
 
     def _on_start_day_strategy(self):
         self._strategy.on_start(self)
@@ -306,21 +292,14 @@ class Tester:
             self.close_position()
         close_price = intraday_data[-1][1]
         self._day_close_price_history.append(close_price)
-        for i, indicator in enumerate(self._indicators):
-            if self._is_indicator_initialized[i]:
-                indicator.clear(self)
         self._price_history.clear()
         self._volume_history.clear()
         self._high_history.clear()
         self._low_history.clear()
+        self._indicators_values.clear()
 
     def _on_tick(self):
-        for i, indicator in enumerate(self._indicators):
-            if not self._is_indicator_initialized[i] and self._current_period_index + 1 == indicator.get_init_periods():
-                self._is_indicator_initialized[i] = True
-                indicator.initialize(self)
-            elif self._is_indicator_initialized[i]:
-                indicator.on_tick(self)
+        pass
 
     def _on_tick_strategy(self):
         if self._position is not None:
