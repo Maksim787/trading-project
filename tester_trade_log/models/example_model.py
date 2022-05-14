@@ -86,8 +86,7 @@ class Model:
 
     def create_data(self, horizon: int, alpha: float, refill: bool = False, head: int = 20, tail: int = 10):
         self._alpha = alpha
-        output = "analysis/data/indicator_data/" + self._ticker + "_" + str(self._period.total_seconds()) + "_" + str(
-            horizon) + ".csv"
+        output = "analysis/data/indicator_data/" + self._ticker + "_" + str(self._period.total_seconds()) + "_" + str(horizon) + ".csv"
         if os.path.exists(output) and refill is False:
             self._df = pd.read_csv(output, sep="\t")
             print(self._df.columns)
@@ -115,7 +114,7 @@ class Model:
             df["trand_of_price"] = (df["new_price"] > df["close"]).astype(bool)
             df["day"] = day_index
             df = df.dropna()
-            df = df.iloc[head: -(horizon + tail)]
+            df = df.iloc[head : -(horizon + tail)]
             lst_of_df.append(df)
         all_data = pd.concat(lst_of_df, ignore_index=True)
         # df["trand_of_price"] = df["trand_of_price"].apply(self._compute_classificator)
@@ -128,27 +127,22 @@ class Model:
         self._test_size = test_size
         self._train_data = self._df[self._df["day"] < (1 - self._test_size) * self._count_of_days].drop(["day"], axis=1)
         if self._type_of_model == "regressor":
-            self._model.fit(self._train_data.drop(["new_price", "trand_of_price"], axis=1),
-                            self._train_data["new_price"])
+            self._model.fit(self._train_data.drop(["new_price", "trand_of_price"], axis=1), self._train_data["new_price"])
         elif self._type_of_model == "classificator":
-            self._model.fit(self._train_data.drop(["new_price", "trand_of_price"], axis=1),
-                            self._train_data["trand_of_price"])
+            self._model.fit(self._train_data.drop(["new_price", "trand_of_price"], axis=1), self._train_data["trand_of_price"])
         print("ALL", self._train_data.shape)
 
     def get_score(self):
         self._test_data = self._df[self._df["day"] >= (1 - self._test_size) * self._count_of_days].drop(["day"], axis=1)
         if self._type_of_model == "regressor":
-            return self._model.score(self._test_data.drop(['new_price', 'trand_of_price'], axis=1),
-                                     self._test_data['new_price'])
+            return self._model.score(self._test_data.drop(["new_price", "trand_of_price"], axis=1), self._test_data["new_price"])
         elif self._type_of_model == "classificator":
-            return self._model.score(self._test_data.drop(['new_price', 'trand_of_price'], axis=1),
-                                     self._test_data['trand_of_price'])
+            return self._model.score(self._test_data.drop(["new_price", "trand_of_price"], axis=1), self._test_data["trand_of_price"])
 
 
-p = Model("analysis/data/tickers_trade_log", "SIBN", datetime.timedelta(minutes=1), "classificator",
-          DecisionTreeClassifier(max_depth=2))
-'''p = Model("analysis/data/tickers_trade_log", "SBER", datetime.timedelta(minutes=1), "classificator",
-          CatBoostClassifier(iterations=2, learning_rate=0.7, depth=2))'''
+p = Model("analysis/data/tickers_trade_log", "SIBN", datetime.timedelta(minutes=1), "classificator", DecisionTreeClassifier(max_depth=2))
+"""p = Model("analysis/data/tickers_trade_log", "SBER", datetime.timedelta(minutes=1), "classificator",
+          CatBoostClassifier(iterations=2, learning_rate=0.7, depth=2))"""
 # p = Model("analysis/data/tickers_trade_log", "SBER", datetime.timedelta(minutes=1), iterations=2, learning_rate=0.7, depth=2)
 lst = []
 for i in range(1, 5):

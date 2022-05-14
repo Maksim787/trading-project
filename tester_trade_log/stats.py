@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from typing import Callable
+from prettytable import PrettyTable
 
 
 class StrategyTester:
@@ -46,11 +47,19 @@ class StrategyTester:
         return np.array(returns_by_day) * 100 - 100
 
     @staticmethod
-    def _get_trade_type(trades: list[list[Trade]], direction: DIRECTION):
+    def _get_trades_count_by_day(trades: list[list[Trade]]) -> np.array:
+        return np.array([len(today_trades) for today_trades in trades])
+
+    @staticmethod
+    def _get_trade_type(trades: list[list[Trade]], direction: DIRECTION) -> list[list[Trade]]:
         direction_trades = []
         for trade_list in trades:
             direction_trades.append([trade for trade in trade_list if trade.direction == direction])
         return direction_trades
+
+    @staticmethod
+    def _get_trades_returns(trades: list[list[Trade]]) -> np.array:
+        return np.array([trade.profit_ratio() * 100 - 100 for day_trades in trades for trade in day_trades])
 
     @staticmethod
     def profit_ratio(returns):
@@ -60,49 +69,112 @@ class StrategyTester:
         records = []
         for ticker in self._tickers:
             tester = self._results_by_ticker[ticker]
+
             trades = tester.get_trades_history()
             long_trades = self._get_trade_type(trades, DIRECTION.LONG)
             short_trades = self._get_trade_type(trades, DIRECTION.SHORT)
 
-            long_trades_cnt = np.array([len(today_trades) for today_trades in long_trades]).mean()
-            short_trades_cnt = np.array([len(today_trades) for today_trades in short_trades]).mean()
+            # total info
+            trades_cnt = self._get_trades_count_by_day(trades)
+            long_trades_cnt = self._get_trades_count_by_day(long_trades)
+            short_trades_cnt = self._get_trades_count_by_day(short_trades)
 
+            returns = self._get_trades_returns(trades)
+            returns_long = self._get_trades_returns(long_trades)
+            returns_short = self._get_trades_returns(short_trades)
+
+            # day info
             returns_by_day = self._get_returns_by_day(trades)
             returns_by_day_long = self._get_returns_by_day(long_trades)
             returns_by_day_short = self._get_returns_by_day(short_trades)
 
-            total_profitable = self.profit_ratio(returns_by_day)
-            long_profitable = self.profit_ratio(returns_by_day_long)
-            short_profitable = self.profit_ratio(returns_by_day_short)
-
-            mean, std = returns_by_day.mean(), returns_by_day.std()
             record = {
-                "mean": mean,
-                "std": std,
-                "sharpe": mean / std,
-                "total trades": long_trades_cnt + short_trades_cnt,
-                "total profitability": total_profitable,
-                "long trades": long_trades_cnt,
-                "short trades": short_trades_cnt,
-                "long/short ratio": long_trades_cnt / short_trades_cnt,
-                "long mean": returns_by_day_long.mean(),
-                "long std": returns_by_day_long.std(),
-                "long profitability": long_profitable,
-                "short mean": returns_by_day_short.mean(),
-                "short std": returns_by_day_short.std(),
-                "short profitability": short_profitable,
+                "mean": returns.mean(),
+                "std": returns.std(),
+                "sharpe": returns.mean() / returns.std(),
+                "mean long": returns_long.mean(),
+                "std long": returns_long.std(),
+                "mean short": returns_short.mean(),
+                "std short": returns_short.std(),
+                "count mean": trades_cnt.mean(),
+                "count std": trades_cnt.std(),
+                "long count mean": long_trades_cnt.mean(),
+                "long count std": long_trades_cnt.std(),
+                "short count mean": short_trades_cnt.mean(),
+                "short count std": short_trades_cnt.std(),
+                "profitability": self.profit_ratio(returns),
+                "profitability long": self.profit_ratio(returns_long),
+                "profitability short": self.profit_ratio(returns_short),
+                "sharpe (days)": returns_by_day.mean() / returns_by_day.std(),
+                "mean (days)": returns_by_day.mean(),
+                "std (days)": returns_by_day.std(),
+                "mean long (days)": returns_by_day_long.mean(),
+                "std long (days)": returns_by_day_long.std(),
+                "mean short (days)": returns_by_day_short.mean(),
+                "std short (days)": returns_by_day_short.std(),
+                "profitability (days)": self.profit_ratio(returns_by_day),
+                "profitability long (days)": self.profit_ratio(returns_by_day_long),
+                "profitability short (days)": self.profit_ratio(returns_by_day_short),
             }
             records.append(record)
         df = pd.DataFrame.from_records(records, index=self._tickers)
         return df
 
+    @staticmethod
+    def _format_mean_std(mean, std, precision, units=""):
+        return f"{mean:.{precision}f}{units} ± {std:.{precision}f}{units}"
+
+    @staticmethod
+    def _format_value(value, precision, units=""):
+        return f"{value:.{precision}f}{units}"
+
     def print_stats(self):
         df = self.get_stats()
+        trades_info = PrettyTable(
+            ["ticker", "returns", "profitability", "returns long", "profitability long", "returns short", "profitability short"], title="Trades info"
+        )
+        day_info = PrettyTable(
+            [
+                "ticker",
+                "sharpe",
+                "trades count",
+                "long count",
+                "short count",
+                "returns",
+                "profitability",
+                "returns long",
+                "profitability long",
+                "returns short",
+                "profitability short",
+            ],
+            title="Days info",
+        )
         for ticker, row in sorted(df.iterrows(), key=lambda x: -x[1]["sharpe"]):
-            print(
-                f"{ticker}:\t"
-                f"sharpe: {row['sharpe']:.2f}\t"
-                f"total: {row['mean']:.2f} ± {row['std']:.2f} ({row['total trades']:4.1f} trades), {row['total profitability']:.1f}% profitable\t"
-                f"long: {row['long mean']:.2f} ± {row['long std']:.2f} ({row['long trades'] / row['total trades'] * 100:.1f}%), {row['long profitability']:.1f}% profitable\t"
-                f"short: {row['short mean']:.2f} ± {row['short std']:.2f} ({row['short trades'] / row['total trades'] * 100:.1f}%), {row['short profitability']:.1f}% profitable"
+            trades_info.add_row(
+                [
+                    ticker,
+                    self._format_mean_std(row["mean"], row["std"], 2, "%"),
+                    self._format_value(row["profitability"], 1, "%"),
+                    self._format_mean_std(row["mean long"], row["std long"], 2, "%"),
+                    self._format_value(row["profitability long"], 1, "%"),
+                    self._format_mean_std(row["mean short"], row["std short"], 2, "%"),
+                    self._format_value(row["profitability short"], 1, "%"),
+                ]
             )
+            day_info.add_row(
+                [
+                    ticker,
+                    self._format_value(row["sharpe"], 2),
+                    self._format_mean_std(row["count mean"], row["count std"], 1),
+                    self._format_mean_std(row["long count mean"], row["long count std"], 1),
+                    self._format_mean_std(row["short count mean"], row["short count std"], 1),
+                    self._format_mean_std(row["mean (days)"], row["std (days)"], 2, "%"),
+                    self._format_value(row["profitability (days)"], 1, "%"),
+                    self._format_mean_std(row["mean long (days)"], row["std long (days)"], 2, "%"),
+                    self._format_value(row["profitability long (days)"], 1, "%"),
+                    self._format_mean_std(row["mean short (days)"], row["std short (days)"], 2, "%"),
+                    self._format_value(row["profitability short (days)"], 1, "%"),
+                ]
+            )
+        print(trades_info)
+        print(day_info)

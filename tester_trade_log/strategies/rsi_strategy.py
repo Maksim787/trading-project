@@ -23,7 +23,7 @@ class RSIStrategy(Strategy):
         t.set_start_day_index(self._start_day_index)
         t.set_trading_days(self._trading_days)
         t.set_periods_after_start(self._length - 1)
-        t.set_periods_before_finish(self._length)
+        t.set_periods_before_finish(self._duration)
 
         # rsi indicator
         t.add_indicator(self._rsi)
