@@ -3,17 +3,18 @@ from ta.momentum import RSIIndicator
 
 import datetime
 import pickle
+import os
 import pandas as pd
 import numpy as np
 
 
 class RSITreeStrategy(Strategy):
-    def __init__(self, ticker, start_day_index, trading_days, duration):
+    def __init__(self, ticker, start_day_index, trading_days, duration, model_path):
         self._duration = duration
         self._start_day_index = start_day_index
         self._trading_days = trading_days
 
-        with open(f"tester_trade_log/models/saved/{ticker}", "rb") as f:
+        with open(os.path.join(model_path, ticker), "rb") as f:
             self._model = pickle.load(f)
 
         def get_model_prediction():
@@ -21,14 +22,11 @@ class RSITreeStrategy(Strategy):
                 return RSIIndicator(pd.Series(kwargs["close"]), length).rsi().values
 
             def model_prediction(**kwargs):
-                X = pd.DataFrame(
-                    {
-                        "rsi (4 length)": rsi_by_length(4, **kwargs),
-                        "rsi (7 length)": rsi_by_length(7, **kwargs),
-                        "rsi (14 length)": rsi_by_length(14, **kwargs),
-                    }
-                )
-                nas = np.zeros(13)
+                lengths = [4, 7, 14]
+                X = pd.DataFrame()
+                for length in lengths:
+                    X[f"rsi ({length} length)"] = rsi_by_length(length, **kwargs)
+                nas = np.zeros(max(lengths) - 1)
                 nas.fill(np.nan)
                 predictions = np.concatenate((nas, self._model.predict(X.dropna())), axis=0)
                 assert len(predictions) == len(kwargs["close"])

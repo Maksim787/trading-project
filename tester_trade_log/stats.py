@@ -128,7 +128,7 @@ class StrategyTester:
     def _format_value(value, precision, units=""):
         return f"{value:.{precision}f}{units}"
 
-    def print_stats(self):
+    def print_stats(self, trade_result_file="", day_result_file=""):
         df = self.get_stats()
         trades_info = PrettyTable(
             ["ticker", "returns", "profitability", "returns long", "profitability long", "returns short", "profitability short"], title="Trades info"
@@ -176,5 +176,11 @@ class StrategyTester:
                     self._format_value(row["profitability short (days)"], 1, "%"),
                 ]
             )
+        if trade_result_file:
+            with open(trade_result_file, "w", encoding="utf-8") as f:
+                f.write(trades_info.get_csv_string())
+        if day_result_file:
+            with open(day_result_file, "w", encoding="utf-8") as f:
+                f.write(trades_info.get_csv_string())
         print(trades_info)
         print(day_info)

@@ -7,11 +7,12 @@ import pandas as pd
 
 
 class RSIStrategy(Strategy):
-    def __init__(self, length, duration, start_day_index, trading_days):
+    def __init__(self, length, duration, start_day_index, trading_days, check_crossing):
         self._length = length
         self._duration = duration
         self._start_day_index = start_day_index
         self._trading_days = trading_days
+        self._check_crossing = check_crossing
 
         def rsi(**kwargs):
             return RSIIndicator(pd.Series(kwargs["close"])).rsi().values
@@ -29,12 +30,19 @@ class RSIStrategy(Strategy):
         t.add_indicator(self._rsi)
 
     def on_tick(self, t: "Tester"):
-        rsi = t.get_current_indicator(0)
         # decision
-        if rsi < 30:
-            t.buy(duration=self._duration)
-        if rsi > 70:
-            t.sell(duration=self._duration)
+        if self._check_crossing:
+            rsi = t.get_today_indicator_history(0)
+            if rsi[-1] > 30 >= rsi[-2]:
+                t.buy(duration=self._duration)
+            if rsi[-1] < 70 <= rsi[-2]:
+                t.sell(duration=self._duration)
+        else:
+            rsi = t.get_current_indicator(0)
+            if rsi < 30:
+                t.buy(duration=self._duration)
+            if rsi > 70:
+                t.sell(duration=self._duration)
 
     def on_start(self, t: "Tester"):
         pass
