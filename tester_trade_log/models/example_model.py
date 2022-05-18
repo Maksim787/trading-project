@@ -48,7 +48,8 @@ def fill_volume_indicators(df):
 
 
 def create_old_indicators(df, shifts):
-    for column in df.columns:
+    columns = df.columns
+    for column in columns:
         for shift in shifts:
             new_column = "new_" + str(shift) + "_" + column
             df[new_column] = df[column].shift(shift)
@@ -89,7 +90,7 @@ class Model:
         output = "analysis/data/indicator_data/" + self._ticker + "_" + str(self._period.total_seconds()) + "_" + str(horizon) + ".csv"
         if os.path.exists(output) and refill is False:
             self._df = pd.read_csv(output, sep="\t")
-            print(self._df.columns)
+            # print(self._df.columns)
             print("Already exist")
             return
         data_iterator = enumerate(DataIterator(self._data_directory, self._ticker, self._period))
@@ -110,7 +111,7 @@ class Model:
             for k in range(horizon):
                 intraday_price.append(0)
             df["new_price"] = intraday_price[horizon:]
-            # df["price_change"] = df["new_price"] - df["price_change"]
+            df["price_change"] = df["new_price"] - df["close"]
             df["trand_of_price"] = (df["new_price"] > df["close"]).astype(bool)
             df["day"] = day_index
             df = df.dropna()
@@ -140,13 +141,13 @@ class Model:
             return self._model.score(self._test_data.drop(["new_price", "trand_of_price"], axis=1), self._test_data["trand_of_price"])
 
 
-p = Model("analysis/data/tickers_trade_log", "SIBN", datetime.timedelta(minutes=1), "classificator", DecisionTreeClassifier(max_depth=2))
+p = Model("analysis/data/tickers_trade_log", "TAER", datetime.timedelta(minutes=1), "classificator", DecisionTreeClassifier(max_depth=2))
 """p = Model("analysis/data/tickers_trade_log", "SBER", datetime.timedelta(minutes=1), "classificator",
           CatBoostClassifier(iterations=2, learning_rate=0.7, depth=2))"""
 # p = Model("analysis/data/tickers_trade_log", "SBER", datetime.timedelta(minutes=1), iterations=2, learning_rate=0.7, depth=2)
 lst = []
-for i in range(1, 5):
-    p.create_data(i, 0.5)
-    p.fit()
-    lst.append(p.get_score())
+for i in range(1, 10):
+    p.create_data(i, 0.5, True)
+    # p.fit()
+    # lst.append(p.get_score())
 print(lst)
