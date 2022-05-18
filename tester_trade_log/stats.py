@@ -181,6 +181,6 @@ class StrategyTester:
                 f.write(trades_info.get_csv_string())
         if day_result_file:
             with open(day_result_file, "w", encoding="utf-8") as f:
-                f.write(trades_info.get_csv_string())
+                f.write(day_info.get_csv_string())
         print(trades_info)
         print(day_info)
