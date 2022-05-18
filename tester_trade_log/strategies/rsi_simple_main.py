@@ -16,9 +16,9 @@ for check_crossing in [False, True]:
         else:
             file_name = "simple"
         if is_test:
-            file_name += "test"
+            file_name += "_test"
         else:
-            file_name += "train"
+            file_name += "_train"
 
         def strategy_getter(ticker=None):
             return RSIStrategy(14, 10, start_test_index, trading_days_test, check_crossing=check_crossing)
@@ -27,6 +27,6 @@ for check_crossing in [False, True]:
         tester.test()
         folder = "tester_trade_log/strategies/results"
         tester.print_stats(
-            trade_result_file=os.path.join(folder, f"trades_{file_name}_{is_test}.csv"),
-            day_result_file=os.path.join(folder, f"days_{file_name}_{is_test}.csv"),
+            trade_result_file=os.path.join(folder, f"trades_{file_name}.csv"),
+            day_result_file=os.path.join(folder, f"days_{file_name}.csv"),
         )
