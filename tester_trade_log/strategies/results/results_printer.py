@@ -81,6 +81,28 @@ def plot_returns(is_trade_plot, table_names, postfix, plot_file):
     plt.show()
 
 
+def plot_long_short(table_name, postfix, plot_file):
+    df = get_trades_table(table_name)
+    df.columns = [column + postfix for column in df.columns]
+    df = df.drop(index=["TAER"])
+    df = df.sort_values(by="Short" + postfix, key=lambda x: -extract_mean_std(x)[0])
+    returns_1, std_1 = extract_mean_std(df["Short" + postfix])
+    returns_2, std_2 = extract_mean_std(df["Long" + postfix])
+    n_tickers = df.shape[0]
+    x = np.linspace(1, n_tickers, n_tickers)
+    plt.errorbar(x, returns_1, std_1, label="Short", fmt="o", capsize=3, alpha=0.7, color="C0")
+    plt.errorbar(x + 0.5, returns_2, std_1, label="Long", fmt="o", capsize=3, alpha=0.7, color="C1")
+    plt.axhline(0, color="black", alpha=0.3)
+    plt.xlabel("Номер тикера")
+    plt.ylabel("Прибыль в %")
+    plt.title("Средняя прибыль за сделку и её стандартное отклонение")
+    plt.legend(loc="upper right")
+    plt.savefig(os.path.join("figures", plot_file))
+    plt.show()
+
+
+plot_long_short("trades_tree_0.csv", " (3)", "long_short_3.png")
+
 plot_returns(True, ["trades_crossing_train.csv", "trades_simple_train.csv"], [" (1)", " (2)"], "1_2_trades.png")
 
 plot_returns(True, ["trades_simple_test.csv", "trades_tree_0.csv"], [" (2)", " (3)"], "2_3_trades.png")
