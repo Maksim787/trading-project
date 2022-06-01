@@ -1,13 +1,13 @@
 from tester_trade_log.stats import StrategyTester
 from tester_trade_log.strategies.rsi_simple_strategy import RSIStrategy
 
-import os
-
 start_train_index = 0
 trading_days_train = 199
 
 start_test_index = 199
 trading_days_test = 50
+
+folder = "tester_trade_log/strategies/results/data"
 
 for check_crossing in [False, True]:
     for is_test in [False, True]:
@@ -23,10 +23,6 @@ for check_crossing in [False, True]:
         def strategy_getter(ticker=None):
             return RSIStrategy(14, 10, start_test_index, trading_days_test, check_crossing=check_crossing)
 
-        tester = StrategyTester(strategy_getter, "analysis/data/tickers_trade_log")  # , tickers=["AFKS", "YNDX"])
+        tester = StrategyTester(strategy_getter, "analysis/data/tickers_trade_log", file_name)  # , tickers=["AFKS", "YNDX"])
         tester.test()
-        folder = "tester_trade_log/strategies/results"
-        tester.print_stats(
-            trade_result_file=os.path.join(folder, f"trades_{file_name}.csv"),
-            day_result_file=os.path.join(folder, f"days_{file_name}.csv"),
-        )
+        tester.print_stats(trade_result_folder=folder, day_result_folder=folder, detailed_result_folder=folder)

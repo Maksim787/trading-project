@@ -5,15 +5,17 @@ import datetime
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
+import pickle
 
 from typing import Callable
 from prettytable import PrettyTable
 
 
 class StrategyTester:
-    def __init__(self, strategy_getter: Callable, data_directory, tickers=None):
+    def __init__(self, strategy_getter: Callable, data_directory: str, strategy_name: str, tickers=None):
         self._strategy_getter = strategy_getter
         self._data_directory = data_directory
+        self._strategy_name = strategy_name
         self._tickers = self._get_tickers() if tickers is None else tickers
         self._results_by_ticker: dict[str, Tester] = {}
         self._days: list[datetime.datetime] = []
@@ -65,12 +67,19 @@ class StrategyTester:
     def profit_ratio(returns):
         return (returns > 0).sum() / len(returns) * 100
 
-    def get_stats(self):
+    def get_stats(self, detailed_result_folder=""):
         records = []
         for ticker in self._tickers:
             tester = self._results_by_ticker[ticker]
 
             trades = tester.get_trades_history()
+            if detailed_result_folder:
+                directory = os.path.join(detailed_result_folder, f"detailed_results_{self._strategy_name}")
+                if not os.path.exists(directory):
+                    os.mkdir(directory)
+                with open(os.path.join(directory, f"{ticker}.pickle"), "wb") as f:
+                    pickle.dump(trades, f)
+
             long_trades = self._get_trade_type(trades, DIRECTION.LONG)
             short_trades = self._get_trade_type(trades, DIRECTION.SHORT)
 
@@ -128,8 +137,8 @@ class StrategyTester:
     def _format_value(value, precision, units=""):
         return f"{value:.{precision}f}{units}"
 
-    def print_stats(self, trade_result_file="", day_result_file=""):
-        df = self.get_stats()
+    def print_stats(self, trade_result_folder="", day_result_folder="", detailed_result_folder=""):
+        df = self.get_stats(detailed_result_folder)
         trades_info = PrettyTable(
             ["ticker", "returns", "profitability", "returns long", "profitability long", "returns short", "profitability short"], title="Trades info"
         )
@@ -176,11 +185,11 @@ class StrategyTester:
                     self._format_value(row["profitability short (days)"], 1, "%"),
                 ]
             )
-        if trade_result_file:
-            with open(trade_result_file, "w", encoding="utf-8") as f:
+        if trade_result_folder:
+            with open(os.path.join(trade_result_folder, f"trades_{self._strategy_name}.csv"), "w", encoding="utf-8") as f:
                 f.write(trades_info.get_csv_string())
-        if day_result_file:
-            with open(day_result_file, "w", encoding="utf-8") as f:
+        if day_result_folder:
+            with open(os.path.join(trade_result_folder, f"days_{self._strategy_name}.csv"), "w", encoding="utf-8") as f:
                 f.write(day_info.get_csv_string())
         print(trades_info)
         print(day_info)

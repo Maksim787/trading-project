@@ -1,7 +1,6 @@
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
 
 results_folder = "tester_trade_log/strategies/results"
@@ -9,7 +8,7 @@ os.chdir(results_folder)
 
 
 def get_trades_table(name):
-    df = pd.read_csv(name).replace("%", "", regex=True)
+    df = pd.read_csv(os.path.join("data", name)).replace("%", "", regex=True)
     df = df.drop(columns=["profitability", "profitability long", "profitability short"])
     df.columns = ["Тикер", "Прибыль", "Long", "Short"]
     df.set_index("Тикер", inplace=True)
@@ -17,7 +16,7 @@ def get_trades_table(name):
 
 
 def get_days_table(name):
-    df = pd.read_csv(name).replace("%", "", regex=True)
+    df = pd.read_csv(os.path.join("data", name)).replace("%", "", regex=True)
     df = df.drop(
         columns=[
             "trades count",
